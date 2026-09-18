@@ -4,7 +4,7 @@ An 8-hour MVP for natural-language, parametric CAD built with Replicad and OpenC
 
 ## Current slice
 
-The first vertical slice is a spur-gear workspace: a design brief, parametric inspector, dependency graph, and CAD viewport shell. The next implementation step is wiring the Replicad OpenCascade worker to the viewport and replacing the placeholder gear with a real solid.
+The first vertical slice is a spur-gear workspace: a design brief, parametric inspector, dependency graph, and CAD viewport shell. Replicad/OpenCascade is now wired behind a worker adapter; the remaining UI slice is connecting worker mesh output to the viewport.
 
 ## Agent harness
 
@@ -14,7 +14,7 @@ The repository now includes a typed, observable agent pipeline:
 intent-parser → design-planner → cad-builder → geometry-evaluator
 ```
 
-The harness lives in `src/harness/`. CAD execution is isolated behind `src/cad/adapter.ts`, so Replicad/OpenCascade can be implemented independently in a worker without changing orchestration or UI contracts. See [`docs/harness.md`](docs/harness.md) and [`AGENTS.md`](AGENTS.md) for the event-day split plan.
+The harness lives in `src/harness/`. CAD execution is isolated behind `src/cad/adapter.ts`, with real Replicad/OpenCascade execution available through the worker adapter. See [`docs/harness.md`](docs/harness.md) and [`AGENTS.md`](AGENTS.md) for the event-day split plan.
 
 ## Run locally
 

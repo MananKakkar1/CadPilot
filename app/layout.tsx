@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './brand.css';
+import './tailwind.css';
+import './landing.css';
+import './magic-overrides.css';
 
 export const metadata: Metadata = {
   title: 'Agentic CAD — Design by intent',
-  description: 'A calmer way to build parametric geometry.',
+  description: 'Describe the part. Build the system. Parametric CAD for engineering teams.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

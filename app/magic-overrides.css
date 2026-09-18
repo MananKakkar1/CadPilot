@@ -1,0 +1,3 @@
+.magic-beam-host{position:relative;max-width:1180px;margin:0 auto}.magic-beam-host>.cad-demo{max-width:none;position:relative}.workflow-map{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:78px;min-height:150px}.workflow-map>.workflow-stage{z-index:2;background:var(--black)}.workflow-map>svg{z-index:1}.workflow-map:before{content:'';position:absolute;left:0;right:0;top:12px;height:1px;background:var(--line)}
+@media(max-width:860px){.workflow-map{grid-template-columns:repeat(2,1fr);gap:28px}.workflow-map>svg{display:none}.workflow-map:before{display:none}}
+@media(max-width:560px){.workflow-map{grid-template-columns:1fr}}

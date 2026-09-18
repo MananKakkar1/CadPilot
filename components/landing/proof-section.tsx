@@ -1,0 +1,7 @@
+'use client';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+export function ProofSection() {
+  return <section className="section proof" id="proof"><div className="section-intro"><Badge>ENGINEERING PROOF</Badge><h2>Geometry that stays legible after generation.</h2><p>The useful part is not the first shape. It is the system underneath it.</p></div><Tabs defaultValue="graph"><TabsList><TabsTrigger value="graph">Parametric graph</TabsTrigger><TabsTrigger value="evaluation">Evaluation</TabsTrigger><TabsTrigger value="output">Output</TabsTrigger></TabsList><TabsContent value="graph"><div className="proof-panel"><div className="graph-rail"><span className="graph-node active">Intent</span><i /><span className="graph-node">Gear parameters</span><i /><span className="graph-node">Tooth profile</span><i /><span className="graph-node">Solid</span></div><div><strong>Every decision has a place in the graph.</strong><p>Edit the input, follow the dependency chain, and keep the result understandable.</p></div></div></TabsContent><TabsContent value="evaluation"><div className="proof-panel proof-stats"><strong>96<span>/100</span></strong><p>Geometry valid · Specification matched · Manufacturable preview</p></div></TabsContent><TabsContent value="output"><div className="proof-panel output-proof"><span>STEP</span><span>STL</span><span>VERSIONABLE</span><p>Studio-ready output without losing the source model.</p></div></TabsContent></Tabs></section>;
+}

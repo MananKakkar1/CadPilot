@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--black);
+  --color-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #15110f;
+  --color-secondary: var(--surface-hi);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--surface-hi);
+  --color-accent-foreground: var(--text);
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: var(--accent);
+}

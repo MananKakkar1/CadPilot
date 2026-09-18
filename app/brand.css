@@ -1,0 +1,7 @@
+.brand-logo { display: block; width: 172px; height: auto; }
+.engine-note-brand { display: inline-flex; align-items: center; gap: 7px; margin-right: 8px; vertical-align: middle; }
+.engine-logo { display: block; width: 15px; height: 15px; }
+.site-footer { display: flex; align-items: center; gap: 18px; min-height: 72px; padding: 16px 24px; border-top: 1px solid rgba(238, 232, 220, .08); color: #69655d; font-size: 11px; letter-spacing: .01em; }
+.site-footer .brand-logo { width: 128px; }
+.site-footer span:last-child { margin-left: auto; color: #4f4b45; }
+@media (max-width: 720px) { .brand-logo { width: 148px; } .site-footer { flex-wrap: wrap; gap: 10px 14px; } .site-footer span:last-child { width: 100%; margin-left: 0; } }

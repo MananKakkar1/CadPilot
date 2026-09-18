@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 
 type Params = { teeth: number; module: number; bore: number; thickness: number };
 type Tab = 'parameters' | 'graph' | 'score';
@@ -51,7 +52,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Agentic CAD home"><span className="brand-mark">✳</span><span>Agentic CAD</span></a>
+        <a className="brand" href="#top" aria-label="Agentic CAD home"><Image src="/brand/agentic-cad-logo.svg" alt="Agentic CAD" width={240} height={64} priority className="brand-logo" /></a>
         <div className="workspace-meta"><span className="online-dot" /> Draft workspace <span className="meta-rule" /> v0.1</div>
         <div className="topbar-end"><span className="build-status">{status}</span><button className="secondary-button">Export STEP <span>↗</span></button></div>
       </header>
@@ -67,7 +68,7 @@ export default function Home() {
           <button className={`primary-button ${building ? 'is-building' : ''}`} onClick={generate} disabled={building}><span>{building ? 'Building solid' : 'Generate design'}</span><b>{building ? '◌' : '→'}</b></button>
 
           <div className="preset-list"><div className="field-label">STARTING POINTS</div>{Object.keys(presets).map((name) => <button className={selectedPreset === name ? 'selected' : ''} key={name} onClick={() => choosePreset(name)}><span>{name}</span><b>↗</b></button>)}</div>
-          <div className="engine-note"><span className="online-dot" /> Local geometry engine <em>Replicad</em></div>
+          <div className="engine-note"><span className="engine-note-brand"><Image src="/brand/agentic-cad-mark.svg" alt="" width={15} height={15} className="engine-logo" />Local geometry engine</span><em>Replicad</em></div>
         </aside>
 
         <section className={`viewport panel-enter panel-enter-2 ${building ? 'is-building' : ''}`} aria-label="CAD viewport">
@@ -87,6 +88,7 @@ export default function Home() {
           <div className="inspector-status"><div className="section-title">BUILD STATUS <span className="healthy">HEALTHY</span></div><div className="status-line"><span>Geometry</span><strong>Valid solid</strong></div><div className="status-line"><span>Pitch diameter</span><strong>{metrics.pitch.toFixed(1)} mm</strong></div><div className="status-line"><span>Last build</span><strong>just now</strong></div></div>
         </aside>
       </section>
+      <footer className="site-footer"><Image src="/brand/agentic-cad-logo.svg" alt="Agentic CAD" width={240} height={64} className="brand-logo" /><span>Design intent → editable geometry.</span><span>© 2026 Agentic CAD</span></footer>
     </main>
   );
 }

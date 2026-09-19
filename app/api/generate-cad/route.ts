@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 // Tried in order; a later model is only used if the earlier ones are overloaded (503) or rate-limited (429).
-// Pro goes first: this task needs careful, consistent multi-part code generation more than raw speed.
-const GEMINI_MODELS = ['gemini-pro-latest', 'gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+// Flash first for now (speed) — swap gemini-pro-latest back to the front for higher-fidelity but much slower generations.
+const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-pro-latest'];
 const RETRIES_PER_MODEL = 2;
 const RETRY_BASE_DELAY_MS = 500;
 

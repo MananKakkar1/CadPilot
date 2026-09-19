@@ -53,7 +53,6 @@ function Scene({ result }: { result: AiCadResult | null }) {
       let raf = 0;
       const animate = () => {
         raf = requestAnimationFrame(animate);
-        if (!drag) group.rotation.z += 0.002;
         renderer.render(scene, camera);
       };
       animate();
@@ -71,7 +70,7 @@ function Scene({ result }: { result: AiCadResult | null }) {
       sceneRef.current?.cleanup();
       sceneRef.current = null;
     };
-  }, [result, drag]);
+  }, [result]);
 
   return (
     <div

@@ -1,7 +1,10 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
+import { Dock, DockIcon } from '@/components/magicui/dock';
+import { Box, Download, FileCode2, Send } from 'lucide-react';
 import type { AiCadPart } from './ai-cad-worker';
+import { HANDOFF_FROM_CHILI_NAME, HANDOFF_FROM_CHILI_STEP, HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
 
 function Scene({ parts }: { parts: AiCadPart[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,7 +103,9 @@ type Status = 'idle' | 'generating' | 'building' | 'ready' | 'error';
 type WorkerMessage =
   | { id: number; type: 'progress'; part: AiCadPart; index: number; total: number }
   | { id: number; type: 'done'; result: { parts: AiCadPart[]; metrics: { volume: number; surfaceArea: number } } }
-  | { id: number; type: 'error'; error: string };
+  | { id: number; type: 'error'; error: string }
+  | { id: number; type: 'step-exported'; step: string }
+  | { id: number; type: 'step-error'; error: string };
 
 export function AiCadStudio() {
   const [prompt, setPrompt] = useState('A hex-head M8 bolt, 40mm long');
@@ -113,8 +118,12 @@ export function AiCadStudio() {
   const passesRef = useRef(passes);
   passesRef.current = passes;
   const [references, setReferences] = useState<{ title: string; uri: string }[]>([]);
+  const [exportingToChili, setExportingToChili] = useState(false);
+  const [exportingStep, setExportingStep] = useState(false);
   const worker = useRef<Worker | null>(null);
   const requestId = useRef(0);
+  const stepRequestId = useRef(0);
+  const stepResolvers = useRef(new Map<number, { resolve: (step: string) => void; reject: (error: Error) => void }>());
   const codeRef = useRef('');
   const repairAttempts = useRef(0);
   const repairRef = useRef<(failure: string) => Promise<void>>(async () => {});
@@ -151,6 +160,14 @@ export function AiCadStudio() {
     const nextWorker = new Worker(new URL('./ai-cad-worker.ts', import.meta.url));
     worker.current = nextWorker;
     nextWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      if (event.data.type === 'step-exported' || event.data.type === 'step-error') {
+        const pending = stepResolvers.current.get(event.data.id);
+        stepResolvers.current.delete(event.data.id);
+        if (!pending) return;
+        if (event.data.type === 'step-exported') pending.resolve(event.data.step);
+        else pending.reject(new Error(event.data.error));
+        return;
+      }
       if (event.data.id !== requestId.current) return;
       if (event.data.type === 'error') {
         // Generated code often has a small API mistake (e.g. a method that doesn't exist). Ask Gemini to fix it from the
@@ -202,13 +219,86 @@ export function AiCadStudio() {
       setReferences(Array.isArray(data.references) ? data.references : []);
       setStatus('building');
       setMessage('Building geometry with Replicad…');
-      worker.current?.postMessage({ id: ++requestId.current, code: data.code });
+      worker.current?.postMessage({ id: ++requestId.current, type: 'run', code: data.code });
       if (refine) setRefinement('');
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : String(error));
     }
   };
+
+  const download = (content: BlobPart, filename: string, type: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportStep = async () => {
+    if (!worker.current || parts.length === 0 || exportingStep) return;
+    setExportingStep(true);
+    try {
+      const id = ++stepRequestId.current;
+      const step = await new Promise<string>((resolve, reject) => {
+        stepResolvers.current.set(id, { resolve, reject });
+        worker.current?.postMessage({ id, type: 'export-step' });
+      });
+      download(step, 'agentic-cad-model.step', 'application/step');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setExportingStep(false);
+    }
+  };
+
+  const exportStl = () => {
+    if (parts.length === 0) return;
+    const lines = ['solid agentic-cad'];
+    for (const part of parts) {
+      for (let i = 0; i < part.mesh.triangles.length; i += 3) {
+        const ids = part.mesh.triangles.slice(i, i + 3).map((index) => index * 3);
+        const a = ids.map((index) => part.mesh.vertices[index]);
+        const b = ids.map((index) => part.mesh.vertices[index + 1]);
+        const c = ids.map((index) => part.mesh.vertices[index + 2]);
+        lines.push('facet normal 0 0 0', ' outer loop', `  vertex ${a.join(' ')}`, `  vertex ${b.join(' ')}`, `  vertex ${c.join(' ')}`, ' endloop', 'endfacet');
+      }
+    }
+    lines.push('endsolid agentic-cad');
+    download(lines.join('\n'), 'agentic-cad-model.stl', 'model/stl');
+  };
+
+  const editInChiliCad = async () => {
+    if (!worker.current || parts.length === 0 || exportingToChili) return;
+    setExportingToChili(true);
+    try {
+      const id = ++stepRequestId.current;
+      const step = await new Promise<string>((resolve, reject) => {
+        stepResolvers.current.set(id, { resolve, reject });
+        worker.current?.postMessage({ id, type: 'export-step' });
+      });
+      localStorage.setItem(HANDOFF_TO_CHILI_STEP, step);
+      localStorage.setItem(HANDOFF_TO_CHILI_NAME, 'agentic-cad-model');
+      window.location.href = '/chili-editor';
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+      setExportingToChili(false);
+    }
+  };
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('fromChili') !== '1') return;
+    const step = localStorage.getItem(HANDOFF_FROM_CHILI_STEP);
+    localStorage.removeItem(HANDOFF_FROM_CHILI_STEP);
+    localStorage.removeItem(HANDOFF_FROM_CHILI_NAME);
+    window.history.replaceState({}, '', '/ai');
+    if (!step) return;
+    setStatus('building');
+    setMessage('Importing model from ChiliCAD…');
+    setParts([]);
+    setTimeout(() => worker.current?.postMessage({ id: ++requestId.current, type: 'import-step', step }), 0);
+  }, []);
 
   const busy = status === 'generating' || status === 'building';
   const canRefine = !!code && !busy;
@@ -252,6 +342,7 @@ export function AiCadStudio() {
             </Button>
           </div>
         )}
+        {parts.length > 0 && <Button variant="outline" onClick={editInChiliCad} disabled={busy || exportingToChili}>{exportingToChili ? 'Sending to ChiliCAD…' : 'Edit in ChiliCAD'} <Send size={15} /></Button>}
         {references.length > 0 && (
           <details className="ai-cad-code" open>
             <summary>Reference sources used for fidelity ({references.length})</summary>
@@ -280,6 +371,11 @@ export function AiCadStudio() {
           <span>{parts.length > 0 ? `${parts.length} part${parts.length === 1 ? '' : 's'} · ${totals.volume} mm³ · ${totals.surfaceArea} mm²` : 'No model yet'}</span>
           <span>Drag to orbit · Scroll to zoom</span>
         </div>
+        <Dock className="cad-export-dock" iconSize={38} iconMagnification={50}>
+          <DockIcon title="Export STEP" onClick={exportStep} className="bg-background/80" aria-label="Export STEP file"><Download size={18} /></DockIcon>
+          <DockIcon title="Export STL" onClick={exportStl} className="bg-background/80" aria-label="Export printable STL file"><Box size={18} /></DockIcon>
+          <DockIcon title="Download Replicad source" onClick={() => download(code, 'agentic-cad-model.ts', 'text/plain')} className="bg-background/80" aria-label="Download Replicad source"><FileCode2 size={18} /></DockIcon>
+        </Dock>
       </section>
     </div>
   );

@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
-import { Badge } from '@/components/magicui/badge';
 import { HANDOFF_FROM_CHILI_NAME, HANDOFF_FROM_CHILI_STEP, HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
 
 type BridgeMessage =
@@ -73,7 +72,7 @@ export function ChiliEditor() {
   return (
     <div className="ai-cad-studio">
       <aside className="ai-cad-panel">
-        <Badge>CHILICAD EDITOR</Badge>
+        <p className="section-kicker">CHILICAD EDITOR</p>
         <h1>Full parametric<br /><em>editing, live.</em></h1>
         <p className="lede">
           The model was handed off as STEP into ChiliCAD, a browser-based parametric CAD editor. Edit the

@@ -9,6 +9,7 @@ export function translateMesh(mesh: RawMesh, offset: Vec3): RawMesh;
 export function scaleMesh(mesh: RawMesh, factors: Vec3): RawMesh;
 export function validateRawMesh(mesh: RawMesh, label: string, maxTriangles?: number): void;
 export function measureRawMesh(mesh: RawMesh): { volume: number; surfaceArea: number };
+export function findDisconnectedParts(parts: Array<{ name: string; vertices: number[] }>, thresholdFraction?: number): string[];
 export const meshHelpers: {
   meshFromGrid: typeof meshFromGrid;
   meshFromParametric: typeof meshFromParametric;

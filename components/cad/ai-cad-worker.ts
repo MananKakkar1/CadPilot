@@ -1,4 +1,4 @@
-import { meshHelpers, measureRawMesh, validateRawMesh, type RawMesh } from '../../lib/cad/mesh-helpers.mjs';
+import { meshHelpers, measureRawMesh, validateRawMesh, findDisconnectedParts, type RawMesh } from '../../lib/cad/mesh-helpers.mjs';
 
 export type AiCadMesh = { vertices: number[]; triangles: number[]; normals: number[] };
 export type AiCadPart = { mesh: AiCadMesh; name: string; color: string; volume: number; surfaceArea: number };
@@ -145,6 +145,15 @@ async function runGeneratedCode(id: number, code: string) {
     };
     meshedParts.push(meshedPart);
     self.postMessage({ id, type: 'progress', part: meshedPart, index, total: parts.length } satisfies WorkerResponse);
+  }
+
+  // A part positioned far from every other part is almost always a coordinate/rotation mistake in
+  // the generated placement code, not an intentional design — nothing in a real assembly floats
+  // disconnected from everything else. Fail so the studio's repair loop fixes it, instead of
+  // silently shipping a broken-looking result as a "successful" build.
+  const disconnected = findDisconnectedParts(meshedParts.map(({ name, mesh }) => ({ name, vertices: mesh.vertices })));
+  if (disconnected.length > 0) {
+    throw new Error(`These parts are disconnected from the rest of the assembly, which usually means their position/rotation math is wrong: ${disconnected.join(', ')}. Move them so they connect to the parts they attach to.`);
   }
 
   return {

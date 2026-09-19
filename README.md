@@ -6,6 +6,8 @@ The first screen is designed as a calm technical instrument: the viewport is the
 
 ## Run
 
+Use Node.js 20 or newer. Install with npm on macOS, Windows, or Linux; npm selects the appropriate optional native packages for the current platform.
+
 ```bash
 npm install
 npm run dev

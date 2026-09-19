@@ -1,4 +1,4 @@
-// Generates lib/cad/replicad-api-reference.ts from the installed replicad type definitions,
+// Generates lib/cad/replicad-api-reference.mjs from the installed replicad type definitions,
 // so the API reference given to Gemini always matches the real library. Run: npm run gen:replicad-api
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dtsPath = resolve(root, 'node_modules/replicad/dist/replicad.d.ts');
-const outPath = resolve(root, 'lib/cad/replicad-api-reference.ts');
+const outPath = resolve(root, 'lib/cad/replicad-api-reference.mjs');
 
 // Names that are irrelevant to modelling (I/O, fonts, GC plumbing, manifold, internals).
 const EXCLUDE = new Set([

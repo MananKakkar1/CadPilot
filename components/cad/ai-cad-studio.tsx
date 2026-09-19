@@ -1,10 +1,10 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
 import { Badge } from '@/components/magicui/badge';
-import type { AiCadResult } from './ai-cad-worker';
+import type { AiCadPart } from './ai-cad-worker';
 
-function Scene({ result }: { result: AiCadResult | null }) {
+function Scene({ parts }: { parts: AiCadPart[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<{ cleanup: () => void; group: { rotation: { x: number; y: number; z: number }; scale: { setScalar: (value: number) => void } } } | null>(null);
   const [drag, setDrag] = useState(false);
@@ -35,8 +35,8 @@ function Scene({ result }: { result: AiCadResult | null }) {
       };
       resize();
       window.addEventListener('resize', resize);
-      if (result) {
-        for (const part of result.parts) {
+      if (parts.length > 0) {
+        for (const part of parts) {
           const geometry = new THREE.BufferGeometry();
           geometry.setAttribute('position', new THREE.Float32BufferAttribute(part.mesh.vertices, 3));
           geometry.setIndex(part.mesh.triangles);
@@ -70,7 +70,7 @@ function Scene({ result }: { result: AiCadResult | null }) {
       sceneRef.current?.cleanup();
       sceneRef.current = null;
     };
-  }, [result]);
+  }, [parts]);
 
   return (
     <div
@@ -96,45 +96,55 @@ function Scene({ result }: { result: AiCadResult | null }) {
 }
 
 type Status = 'idle' | 'generating' | 'building' | 'ready' | 'error';
+type WorkerMessage =
+  | { id: number; type: 'progress'; part: AiCadPart; index: number; total: number }
+  | { id: number; type: 'done'; result: { parts: AiCadPart[]; metrics: { volume: number; surfaceArea: number } } }
+  | { id: number; type: 'error'; error: string };
 
 export function AiCadStudio() {
   const [prompt, setPrompt] = useState('A hex-head M8 bolt, 40mm long');
+  const [refinement, setRefinement] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('Describe a part and generate it.');
   const [code, setCode] = useState('');
-  const [result, setResult] = useState<AiCadResult | null>(null);
+  const [parts, setParts] = useState<AiCadPart[]>([]);
   const worker = useRef<Worker | null>(null);
   const requestId = useRef(0);
 
   useEffect(() => {
     const nextWorker = new Worker(new URL('./ai-cad-worker.ts', import.meta.url));
     worker.current = nextWorker;
-    nextWorker.onmessage = (event: MessageEvent<{ id: number; result?: AiCadResult; error?: string }>) => {
+    nextWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       if (event.data.id !== requestId.current) return;
-      if (event.data.error) {
+      if (event.data.type === 'error') {
         setStatus('error');
         setMessage(event.data.error);
         return;
       }
-      if (event.data.result) {
-        setResult(event.data.result);
+      if (event.data.type === 'progress') {
+        const { part, index, total } = event.data;
+        setParts((current) => [...current, part]);
+        setMessage(`Meshing part ${index + 1}/${total}: ${part.name}`);
+        return;
+      }
+      if (event.data.type === 'done') {
         setStatus('ready');
-        setMessage('Model built successfully.');
+        setMessage(`Model built successfully — ${event.data.result.parts.length} part${event.data.result.parts.length === 1 ? '' : 's'}.`);
       }
     };
     return () => nextWorker.terminate();
   }, []);
 
-  const generate = async () => {
-    if (!prompt.trim() || status === 'generating' || status === 'building') return;
+  const runGeneration = async (userText: string, { refine }: { refine: boolean }) => {
+    if (!userText.trim() || status === 'generating' || status === 'building') return;
     setStatus('generating');
-    setMessage('Asking Gemini for replicad code… high-detail assemblies can take a couple of minutes.');
-    setResult(null);
+    setMessage(refine ? 'Asking Gemini to refine the model…' : 'Asking Gemini for replicad code… high-detail assemblies can take a couple of minutes.');
+    setParts([]);
     try {
       const response = await fetch('/api/generate-cad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(refine ? { prompt: userText, previousCode: code } : { prompt: userText }),
       });
       const data = await response.json();
       if (!response.ok || data.error) throw new Error(data.error ?? 'Failed to generate code.');
@@ -142,6 +152,7 @@ export function AiCadStudio() {
       setStatus('building');
       setMessage('Building geometry with Replicad…');
       worker.current?.postMessage({ id: ++requestId.current, code: data.code });
+      if (refine) setRefinement('');
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : String(error));
@@ -149,6 +160,11 @@ export function AiCadStudio() {
   };
 
   const busy = status === 'generating' || status === 'building';
+  const canRefine = !!code && !busy;
+  const totals = useMemo(
+    () => parts.reduce((acc, part) => ({ volume: acc.volume + part.volume, surfaceArea: acc.surfaceArea + part.surfaceArea }), { volume: 0, surfaceArea: 0 }),
+    [parts],
+  );
 
   return (
     <div className="ai-cad-studio">
@@ -162,13 +178,30 @@ export function AiCadStudio() {
           placeholder="e.g. A spur gear with 24 teeth and a 12mm bore"
           rows={5}
         />
-        <Button onClick={generate} disabled={busy}>
+        <Button onClick={() => runGeneration(prompt, { refine: false })} disabled={busy}>
           {busy ? 'Working…' : 'Generate model'} <span>→</span>
         </Button>
         <div className="ai-cad-status">
           <i className={`status-dot ${status === 'error' ? 'status-dot-error' : ''}`} />
           {message}
         </div>
+        {canRefine && (
+          <div className="ai-cad-refine">
+            <div className="control-header">
+              <span>REFINE THIS MODEL</span>
+            </div>
+            <textarea
+              className="ai-cad-textarea"
+              value={refinement}
+              onChange={(event) => setRefinement(event.target.value)}
+              placeholder="e.g. Make the wheels bigger and the body lower"
+              rows={3}
+            />
+            <Button variant="outline" onClick={() => runGeneration(refinement, { refine: true })} disabled={busy || !refinement.trim()}>
+              Apply refinement <span>→</span>
+            </Button>
+          </div>
+        )}
         {code && (
           <details className="ai-cad-code">
             <summary>Generated replicad code</summary>
@@ -177,10 +210,10 @@ export function AiCadStudio() {
         )}
       </aside>
       <section className="ai-cad-viewport" aria-label="Generated CAD model preview">
-        <Scene result={result} />
+        <Scene parts={parts} />
         <div className="canvas-label canvas-label-top">AI GENERATED / PREVIEW</div>
         <div className="canvas-label canvas-label-bottom">
-          <span><i className="status-dot" /> {result ? `${result.parts.length} part${result.parts.length === 1 ? '' : 's'} · ${result.metrics.volume} mm³ · ${result.metrics.surfaceArea} mm²` : 'No model yet'}</span>
+          <span><i className="status-dot" /> {parts.length > 0 ? `${parts.length} part${parts.length === 1 ? '' : 's'} · ${totals.volume} mm³ · ${totals.surfaceArea} mm²` : 'No model yet'}</span>
           <span>Drag to orbit · Scroll to zoom</span>
         </div>
       </section>

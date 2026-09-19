@@ -52,7 +52,9 @@ Exact replicad function signatures (do not invent other signatures):
 - Per-shape ops: shape.fuse(other), shape.cut(other), shape.intersect(other), shape.fillet(radius, filter?), shape.chamfer(distance, filter?), shape.translate([x,y,z]), shape.rotate(angleDeg, position?, direction?), shape.scale(factor, center?: [x,y,z]) — translate/rotate/scale return a new positioned shape. scale takes ONE uniform number, never separate x/y/z factors — build an ellipsoid shape directly with makeEllipsoid(aLength, bLength, cLength) instead of scaling a sphere non-uniformly.
 - Example of a single-piece plate with a hole: const base = drawRectangle(40, 20).sketchOnPlane().extrude(5); const hole = makeCylinder(4, 10, [0,0,-2]); return base.cut(hole);
 - Example of a coilover shock with a real spring, positioned at a wheel corner: const shockBody = { shape: makeCylinder(4, 70, [x, y, z], [0, 0, 1]), name: 'shock', color: '#2b2b2b' }; const coil = { shape: genericSweep(assembleWire([makeCircle(1.8)]), makeHelix(9, 60, 14, [x, y, z], [0, 0, 1]), {}), name: 'spring', color: '#c9a227' }; parts.push(shockBody, coil);
-- Example of a small multi-part assembly (a wheeled cart): const body = { shape: makeBaseBox(80, 40, 20).translate([0, 0, 15]), name: 'body', color: '#e5533d' }; const wheelAt = (x, y) => ({ shape: makeCylinder(10, 4).rotate(90, [0, 0, 0], [1, 0, 0]).translate([x, y, 10]), name: 'wheel', color: '#1a1a1a' }); return [body, wheelAt(-30, 22), wheelAt(30, 22), wheelAt(-30, -22), wheelAt(30, -22)];`;
+- Example of a small multi-part assembly (a wheeled cart): const body = { shape: makeBaseBox(80, 40, 20).translate([0, 0, 15]), name: 'body', color: '#e5533d' }; const wheelAt = (x, y) => ({ shape: makeCylinder(10, 4).rotate(90, [0, 0, 0], [1, 0, 0]).translate([x, y, 10]), name: 'wheel', color: '#1a1a1a' }); return [body, wheelAt(-30, 22), wheelAt(30, 22), wheelAt(-30, -22), wheelAt(30, -22)];
+
+Refinement requests: sometimes the user message includes existing code and an edit instruction instead of a fresh description. In that case, treat the existing code as the current design, apply only the requested change, keep everything else about the design the same (proportions, other parts, colors) unless the instruction implies otherwise, and respond with the COMPLETE updated file (same contract: ONLY code, one main(replicad) function) — never a diff, snippet, or explanation.`;
 
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -61,9 +63,11 @@ export async function POST(request: Request) {
   }
 
   let prompt: string;
+  let previousCode: string | undefined;
   try {
     const body = await request.json();
     prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
+    previousCode = typeof body?.previousCode === 'string' && body.previousCode.trim() ? body.previousCode : undefined;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
@@ -72,8 +76,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'A prompt is required.' }, { status: 400 });
   }
 
+  const userMessage = previousCode
+    ? `Here is the existing replicad code:\n\n${previousCode}\n\nApply this edit and return the complete updated code: ${prompt}`
+    : `Model this object: ${prompt}`;
+
   try {
-    const { text, model } = await generateWithFallback(prompt, apiKey);
+    const { text, model } = await generateWithFallback(userMessage, apiKey);
     const code = extractCode(text);
     return NextResponse.json({ code, model });
   } catch (error) {
@@ -82,7 +90,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function generateWithFallback(prompt: string, apiKey: string): Promise<{ text: string; model: string }> {
+async function generateWithFallback(userMessage: string, apiKey: string): Promise<{ text: string; model: string }> {
   let lastError = 'Gemini request failed.';
 
   for (const model of GEMINI_MODELS) {
@@ -93,7 +101,7 @@ async function generateWithFallback(prompt: string, apiKey: string): Promise<{ t
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: 'user', parts: [{ text: `Model this object: ${prompt}` }] }],
+          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
           generationConfig: { temperature: 0.5, maxOutputTokens: 32768 },
         }),
       });

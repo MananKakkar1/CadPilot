@@ -10,6 +10,9 @@
 .ai-cad-status{margin-top:18px;padding:12px;background:#111110;border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.5}
 .ai-cad-status .status-dot{background:var(--green)}
 .ai-cad-status .status-dot-error{background:#e0554a;box-shadow:0 0 0 4px rgba(224,85,74,.14)}
+.ai-cad-refine{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.ai-cad-refine .control-header{margin-bottom:12px;color:var(--muted);font:10px ui-monospace;letter-spacing:.12em}
+.ai-cad-refine .ai-cad-textarea{min-height:70px;margin-bottom:12px}
 .ai-cad-code{margin-top:18px;border:1px solid var(--line);background:#0e0e0d}
 .ai-cad-code summary{cursor:pointer;padding:10px 12px;color:var(--muted);font:10px ui-monospace;letter-spacing:.08em}
 .ai-cad-code pre{margin:0;padding:12px;border-top:1px solid var(--line);color:var(--text);font:11px ui-monospace;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto}

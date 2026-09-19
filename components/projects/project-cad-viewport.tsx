@@ -40,14 +40,15 @@ export function ProjectCadViewport({ artifactId, revisionNumber }: { artifactId?
         geometry.setIndex(part.triangles); geometry.computeVertexNormals();
         group.add(new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: part.color ?? '#6366f1', roughness: 0.3, metalness: 0.35 })));
       }
+      let fitScale = 1;
       if (group.children.length) {
         const box = new THREE.Box3().setFromObject(group); const size = box.getSize(new THREE.Vector3()).length();
-        group.scale.setScalar(7 / Math.max(size, 1)); const center = box.getCenter(new THREE.Vector3());
+        fitScale = 7 / Math.max(size, 1); group.scale.setScalar(fitScale); const center = box.getCenter(new THREE.Vector3());
         group.children.forEach((child) => child.position.sub(center));
       }
       const resize = () => { const rect = canvas.getBoundingClientRect(); renderer.setSize(rect.width, rect.height, false); camera.aspect = rect.width / Math.max(rect.height, 1); camera.updateProjectionMatrix(); };
       resize(); window.addEventListener('resize', resize);
-      let raf = 0; const animate = () => { raf = requestAnimationFrame(animate); group.rotation.x = view.current.x; group.rotation.y = view.current.y; group.scale.setScalar((7 / Math.max(new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).length(), 1)) * view.current.scale); renderer.render(scene, camera); }; animate();
+      let raf = 0; const animate = () => { raf = requestAnimationFrame(animate); group.rotation.x = view.current.x; group.rotation.y = view.current.y; group.scale.setScalar(fitScale * view.current.scale); renderer.render(scene, camera); }; animate();
       return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); };
     });
     return () => { disposed = true; };

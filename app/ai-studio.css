@@ -14,5 +14,7 @@
 .ai-cad-code{margin-top:18px;border:1px solid var(--line);background:#0e0e0d}
 .ai-cad-code summary{cursor:pointer;padding:10px 12px;color:var(--muted);font:10px ui-monospace;letter-spacing:.08em}
 .ai-cad-code pre{margin:0;padding:12px;border-top:1px solid var(--line);color:var(--text);font:11px ui-monospace;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto}
+.ai-cad-references{margin:0;padding:10px 12px;border-top:1px solid var(--line);list-style:none;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto}
+.ai-cad-references a{color:var(--accent);font-size:12px;line-height:1.5;word-break:break-word}
 .ai-cad-viewport{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 44%,rgba(223,112,72,.13),transparent 29%),#171715}
 @media(max-width:860px){.ai-cad-studio{grid-template-columns:1fr}.ai-cad-viewport{min-height:420px}}

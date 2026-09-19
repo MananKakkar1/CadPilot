@@ -107,6 +107,10 @@ export function AiCadStudio() {
   const [message, setMessage] = useState('Describe a part and generate it.');
   const [code, setCode] = useState('');
   const [parts, setParts] = useState<AiCadPart[]>([]);
+  const [passes, setPasses] = useState(1);
+  const passesRef = useRef(passes);
+  passesRef.current = passes;
+  const [references, setReferences] = useState<{ title: string; uri: string }[]>([]);
   const worker = useRef<Worker | null>(null);
   const requestId = useRef(0);
 
@@ -128,7 +132,9 @@ export function AiCadStudio() {
       }
       if (event.data.type === 'done') {
         setStatus('ready');
-        setMessage(`Model built successfully — ${event.data.result.parts.length} part${event.data.result.parts.length === 1 ? '' : 's'}.`);
+        const partCount = event.data.result.parts.length;
+        const fidelityNote = passesRef.current === 2 ? ' · refined for fidelity (2-pass)' : '';
+        setMessage(`Model built successfully — ${partCount} part${partCount === 1 ? '' : 's'}${fidelityNote}.`);
       }
     };
     return () => nextWorker.terminate();
@@ -137,8 +143,9 @@ export function AiCadStudio() {
   const runGeneration = async (userText: string, { refine }: { refine: boolean }) => {
     if (!userText.trim() || status === 'generating' || status === 'building') return;
     setStatus('generating');
-    setMessage(refine ? 'Asking Gemini to refine the model…' : 'Asking Gemini for replicad code… high-detail assemblies can take a couple of minutes.');
+    setMessage(refine ? 'Asking Gemini to refine the model…' : 'Asking Gemini for replicad code, then running a second pass to refine it for fidelity… high-detail assemblies can take a couple of minutes.');
     setParts([]);
+    setReferences([]);
     try {
       const response = await fetch('/api/generate-cad', {
         method: 'POST',
@@ -148,6 +155,8 @@ export function AiCadStudio() {
       const data = await response.json();
       if (!response.ok || data.error) throw new Error(data.error ?? 'Failed to generate code.');
       setCode(data.code as string);
+      setPasses(data.passes === 2 ? 2 : 1);
+      setReferences(Array.isArray(data.references) ? data.references : []);
       setStatus('building');
       setMessage('Building geometry with Replicad…');
       worker.current?.postMessage({ id: ++requestId.current, code: data.code });
@@ -199,6 +208,20 @@ export function AiCadStudio() {
               Apply refinement <span>→</span>
             </Button>
           </div>
+        )}
+        {references.length > 0 && (
+          <details className="ai-cad-code" open>
+            <summary>Reference sources used for fidelity ({references.length})</summary>
+            <ul className="ai-cad-references">
+              {references.map((reference) => (
+                <li key={reference.uri}>
+                  <a href={reference.uri} target="_blank" rel="noreferrer">
+                    {reference.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
         {code && (
           <details className="ai-cad-code">

@@ -1,12 +1,40 @@
 'use client';
+
 import { useEffect, useRef, useState } from 'react';
-import { Badge } from '@/components/magicui/badge';
 import type { CadModelId, CadModelParams, CadModelResult } from './replicad-models';
 import { labelForModel } from './replicad-models';
+import { createViewer, type Viewer } from './viewer-kit';
+
+const modelColors: Record<CadModelId, number> = {
+  'spur-gear': 0x2563eb,
+  'phone-stand': 0xf97316,
+  'workbench-table': 0x059669,
+  'desktop-robot': 0x7c3aed,
+};
 
 export function CadModelVisual({ model, initialResult, eyebrow = 'REPLICAD / OPENCASCADE', className = '' }: { model: CadModelId; initialResult?: CadModelResult; eyebrow?: string; className?: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null); const [result, setResult] = useState<CadModelResult | null>(null);
-  useEffect(() => { if (initialResult) { setResult(initialResult); return; } const worker = new Worker(new URL('./cad-worker.ts', import.meta.url)); worker.onmessage = (event: MessageEvent<{ result?: CadModelResult }>) => setResult(event.data.result ?? null); worker.postMessage({ id: 1, params: { model, values: { teeth: 20, module: 2, bore: 10, thickness: 5, tilt: 68, width: 72, height: 92 } } as CadModelParams }); return () => worker.terminate(); }, [initialResult, model]);
-  useEffect(() => { let disposed = false; import('three').then((THREE) => { if (disposed || !canvasRef.current) return; const canvas = canvasRef.current; const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(34, 1, .1, 1000); camera.position.set(0, -2, 18); scene.add(new THREE.AmbientLight(0xffefe5, 2.4)); const light = new THREE.DirectionalLight(0xffffff, 4); light.position.set(4, 6, 10); scene.add(light); const group = new THREE.Group(); scene.add(group); if (result) { const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(result.mesh.vertices, 3)); geometry.setIndex(result.mesh.triangles); geometry.computeVertexNormals(); const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xf0784c, roughness: .28, metalness: .42, side: THREE.DoubleSide })); group.add(mesh); const box = new THREE.Box3().setFromObject(mesh); group.scale.setScalar(7 / Math.max(box.getSize(new THREE.Vector3()).length(), 1)); group.position.y = -.3; } const resize = () => { const rect = canvas.getBoundingClientRect(); renderer.setSize(rect.width, rect.height, false); camera.aspect = rect.width / Math.max(rect.height, 1); camera.updateProjectionMatrix(); }; resize(); window.addEventListener('resize', resize); let raf = 0; const animate = () => { raf = requestAnimationFrame(animate); group.rotation.z += .002; renderer.render(scene, camera); }; animate(); (canvas as HTMLCanvasElement & { cleanup?: () => void }).cleanup = () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); renderer.dispose(); }; }); return () => { disposed = true; (canvasRef.current as (HTMLCanvasElement & { cleanup?: () => void }) | null)?.cleanup?.(); }; }, [result]);
-  return <figure className={`cad-model-visual ${className}`} aria-label={`${labelForModel(model)} generated with Replicad`}><div className="model-visual-meta"><Badge>{eyebrow}</Badge><span>{labelForModel(model)}</span></div><canvas ref={canvasRef} /><div className="model-visual-foot"><span><i className="status-dot" /> Valid solid</span><span>{result ? `${result.metrics.volume} mm³` : 'Building geometry'}</span></div></figure>;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [result, setResult] = useState<CadModelResult | null>(null);
+
+  useEffect(() => {
+    if (initialResult) { setResult(initialResult); return; }
+    const worker = new Worker(new URL('./cad-worker.ts', import.meta.url));
+    worker.onmessage = (event: MessageEvent<{ result?: CadModelResult }>) => setResult(event.data.result ?? null);
+    worker.postMessage({ id: 1, params: { model, values: { teeth: 20, module: 2, bore: 10, thickness: 5, tilt: 68, width: 72, height: 92 } } as CadModelParams });
+    return () => worker.terminate();
+  }, [initialResult, model]);
+
+  useEffect(() => {
+    let disposed = false;
+    let viewer: Viewer | null = null;
+    if (!canvasRef.current) return;
+    createViewer(canvasRef.current, { interactive: false, autoRotate: true }).then((created) => {
+      if (disposed) return created.dispose();
+      viewer = created;
+      created.setParts(result ? [{ mesh: result.mesh, color: modelColors[model] }] : []);
+    });
+    return () => { disposed = true; viewer?.dispose(); };
+  }, [model, result]);
+
+  return <figure className={`cad-model-visual ${className}`} aria-label={`${labelForModel(model)} generated with Replicad`}><div className="model-visual-meta"><span className="model-visual-label">{eyebrow}</span><span>{labelForModel(model)}</span></div><canvas ref={canvasRef} /><div className="model-visual-foot"><span>Valid solid</span><span>{result ? `${result.metrics.volume} mm³` : 'Building geometry'}</span></div></figure>;
 }

@@ -26,8 +26,169 @@ model User {
 
   sessions          Session[]
   verificationCodes VerificationCode[]
+  profile           Profile?
+  projects          Project[]
 
   @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String?  @map("display_name")
+  bio         String?  @db.VarChar(280)
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+enum ProjectVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum BuildStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum ArtifactKind {
+  SOURCE
+  INTENT
+  PLAN
+  PREVIEW_MESH
+  STEP
+  STL
+  AUDIT
+}
+
+model Project {
+  id                  String            @id @default(uuid()) @db.Uuid
+  ownerId             String            @map("owner_id") @db.Uuid
+  owner               User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  slug                String            @unique
+  title               String
+  summary             String?           @db.VarChar(500)
+  visibility          ProjectVisibility @default(PRIVATE)
+  publishedRevisionId String?           @unique @map("published_revision_id") @db.Uuid
+  publishedRevision   Revision?         @relation("PublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: SetNull)
+  revisions           Revision[]        @relation("ProjectRevisions")
+  jobs                BuildJob[]
+  conversations       Conversation[]
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  @@index([ownerId, updatedAt])
+  @@map("projects")
+}
+
+model Revision {
+  id             String       @id @default(uuid()) @db.Uuid
+  projectId      String       @map("project_id") @db.Uuid
+  project        Project      @relation("ProjectRevisions", fields: [projectId], references: [id], onDelete: Cascade)
+  revisionNumber Int          @map("revision_number")
+  parentId       String?      @map("parent_id") @db.Uuid
+  parent         Revision?    @relation("RevisionParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Revision[]   @relation("RevisionParent")
+  prompt         String
+  intent         Json
+  plan           Json
+  metrics        Json?
+  validation     Json?
+  sourceCode     String       @map("source_code")
+  isValid        Boolean      @default(false) @map("is_valid")
+  artifacts      Artifact[]
+  buildJob       BuildJob?
+  publishedFor   Project?     @relation("PublishedRevision")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([projectId, revisionNumber])
+  @@index([projectId, createdAt])
+  @@map("revisions")
+}
+
+model BuildJob {
+  id          String      @id @default(uuid()) @db.Uuid
+  projectId   String      @map("project_id") @db.Uuid
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisionId  String?     @unique @map("revision_id") @db.Uuid
+  revision    Revision?   @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  prompt      String
+  parentId    String?     @map("parent_id") @db.Uuid
+  status      BuildStatus @default(QUEUED)
+  error       String?
+  claimedAt   DateTime?   @map("claimed_at")
+  startedAt   DateTime?   @map("started_at")
+  finishedAt  DateTime?   @map("finished_at")
+  events      BuildEvent[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@map("build_jobs")
+}
+
+model BuildEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @map("job_id") @db.Uuid
+  job       BuildJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  sequence  Int
+  stage     String
+  agent     String
+  tool      String?
+  summary   String
+  detail    Json?
+  durationMs Int?    @map("duration_ms")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([jobId, sequence])
+  @@index([jobId, createdAt])
+  @@map("build_events")
+}
+
+model Artifact {
+  id         String       @id @default(uuid()) @db.Uuid
+  revisionId String       @map("revision_id") @db.Uuid
+  revision   Revision     @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  kind       ArtifactKind
+  filename   String
+  mimeType   String       @map("mime_type")
+  storageKey String       @map("storage_key")
+  byteSize   Int          @map("byte_size")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  @@unique([revisionId, kind])
+  @@map("artifacts")
+}
+
+model Conversation {
+  id        String    @id @default(uuid()) @db.Uuid
+  projectId String    @map("project_id") @db.Uuid
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([projectId])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  revisionId     String?      @map("revision_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
 }
 
 // A single logged-in session, identified by an opaque token stored in an

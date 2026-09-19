@@ -129,3 +129,94 @@
   .signals-marquee [class*="animate-marquee"], .magic-model-frame > div[style*="--border-beam-width"] { animation: none !important; display: none; }
   .workflow-map > svg { display: none; }
 }
+
+/* Apple-inspired consistency pass: one quiet surface, one blue action color, and clear type scale. */
+.reference-page {
+  --black: #ffffff;
+  --surface: #ffffff;
+  --surface-hi: #f5f5f5;
+  --text: #111111;
+  --muted: #666666;
+  --line: rgba(17, 17, 17, .14);
+  --line-strong: rgba(17, 17, 17, .28);
+  --accent: #111111;
+  --accent-soft: #737373;
+  --accent-wash: rgba(17, 17, 17, .06);
+  --color-background: #ffffff;
+  --color-foreground: #111111;
+  --color-border: rgba(17, 17, 17, .14);
+  --color-primary-foreground: #ffffff;
+}
+.reference-page .eyebrow,
+.reference-page .stage-number,
+.reference-page .hero-proof-row i,
+.reference-page .signal-proof i { color: var(--accent); }
+.reference-page .hero-announcement { color: var(--accent); }
+.reference-page .hero-announcement { background: var(--accent-wash); border-radius: 999px; padding: 8px 12px; }
+.reference-page .landing-nav { background: rgba(255,255,255,.88); }
+.reference-page .landing-nav .button,
+.reference-page .reference-hero-actions .button { background: #4f46e5; color: #ffffff; box-shadow: none; }
+.reference-page [data-slot="button"] { background: #111111; color: #ffffff; border-color: #111111; }
+.reference-page [data-slot="button"] * { color: inherit; }
+.reference-page [data-slot="button"]:hover { background: #333333; color: #ffffff; }
+.reference-page .hero-model,
+.reference-page .workflow-model,
+.reference-page .proof-model { box-shadow: 0 20px 48px rgba(17, 17, 17, .10); border-radius: 24px; }
+.reference-page .cad-model-visual { border-color: rgba(17, 17, 17, .16); border-radius: 24px; background: radial-gradient(circle at 50% 44%, rgba(17, 17, 17, .08), transparent 46%), #f7f7f7; }
+.reference-page .cad-model-visual::before { opacity: .14; background-image: linear-gradient(rgba(17,17,17,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(17,17,17,.2) 1px, transparent 1px); }
+.reference-page .model-visual-meta,
+.reference-page .model-visual-foot { color: #4a4a4a; }
+.reference-page .model-visual-foot span:last-child { color: #737373; }
+.reference-page .safari-stage { filter: drop-shadow(0 20px 32px rgba(17,17,17,.10)); }
+.reference-page .safari-model { min-height: 100%; border: 0; border-radius: 0 0 11px 11px; box-shadow: none; background: radial-gradient(circle at 50% 45%, rgba(17,17,17,.08), transparent 48%), #f7f7f7; }
+.reference-page .product-seal,
+.reference-page .signal-card > div > span { color: #111111; }
+.reference-page .signal-proof i { background: #111111; }
+.reference-page .bento-radial { background: radial-gradient(circle at 70% 30%, rgba(17,17,17,.12), transparent 45%); }
+.reference-page .bento-lines { background: repeating-linear-gradient(135deg, transparent 0 16px, rgba(17,17,17,.15) 17px 18px); }
+.reference-page .reference-hero { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 92px 0 54px; text-align: left; }
+.reference-page .reference-hero-intro { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, .7fr); gap: clamp(48px, 9vw, 150px); align-items: end; }
+.reference-page .reference-hero h1 { max-width: 760px; margin: 20px 0 0; font-size: clamp(52px, 6.6vw, 96px); line-height: .94; letter-spacing: -.075em; }
+.reference-page .reference-hero-kicker { justify-content: flex-start; font-size: 10px; }
+.reference-page .reference-hero-detail > p { max-width: 410px; margin: 0; color: #555555; font-size: 15px; line-height: 1.55; text-wrap: pretty; }
+.reference-page .reference-hero-actions { justify-content: flex-start; margin-top: 24px; }
+.reference-page .hero-bento { grid-template-columns: minmax(0, 1.65fr) minmax(220px, .85fr); grid-template-rows: repeat(2, 12.5rem); gap: 14px; margin-top: 64px; }
+.reference-page .hero-bento-model { grid-column: 1; grid-row: 1 / span 2; border: 1px solid var(--line); }
+.reference-page .hero-bento-card { grid-column: 2; min-height: 0; border: 1px solid var(--line); }
+.reference-page .hero-bento-card > div:first-child { min-height: 0; }
+.reference-page .hero-bento-cad { position: absolute; inset: 0; min-height: 100%; border: 0; border-radius: inherit; box-shadow: none; }
+.reference-page .hero-bento-cad canvas { min-height: 100%; }
+.reference-page .hero-bento-cad .model-visual-meta { top: 14px; }
+.reference-page .hero-bento-cad .model-visual-foot { bottom: 14px; }
+.reference-page .hero-bento-pattern { position: absolute; inset: 0; opacity: .55; background: linear-gradient(135deg, transparent 0 42%, rgba(17,17,17,.05) 42% 43%, transparent 43%), radial-gradient(circle at 84% 22%, rgba(17,17,17,.1), transparent 30%); }
+.reference-page .hero-bento-card-cyan { background: linear-gradient(145deg, rgba(79,70,229,.08), rgba(6,182,212,.12)); }
+.reference-page .hero-bento-card-pink { background: linear-gradient(145deg, rgba(124,58,237,.08), rgba(236,72,153,.12)); }
+@media (max-width: 780px) { .reference-page .hero-bento { grid-template-columns: 1fr; grid-template-rows: 21rem repeat(2, 12rem); margin-top: 42px; } .reference-page .hero-bento-model, .reference-page .hero-bento-card { grid-column: 1; grid-row: auto; } }
+@media (max-width: 780px) { .reference-page .reference-hero { width: calc(100% - 32px); padding-top: 70px; text-align: center; } .reference-page .reference-hero-intro { grid-template-columns: 1fr; gap: 24px; } .reference-page .reference-hero-kicker, .reference-page .reference-hero-actions { justify-content: center; } .reference-page .reference-hero-detail > p { margin: 0 auto; } .reference-page .reference-hero h1 { font-size: clamp(46px, 13vw, 64px); } }
+
+/* Color is reserved for direct action and real geometry. */
+.reference-page { --accent: #4f46e5; --accent-soft: #06b6d4; --accent-wash: rgba(79, 70, 229, .09); }
+.reference-page [data-slot="button"] { background: #4f46e5; border-color: #4f46e5; }
+.reference-page [data-slot="button"]:hover { background: #4338ca; border-color: #4338ca; }
+.reference-page .hero-announcement { padding: 0; border-radius: 0; background: transparent; color: #4f46e5; }
+.reference-page .section-kicker { margin: 0; color: #4f46e5; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.reference-page .cad-model-visual { background: radial-gradient(circle at 18% 18%, rgba(6,182,212,.18), transparent 34%), radial-gradient(circle at 82% 78%, rgba(124,58,237,.14), transparent 38%), #f8fbff; }
+.reference-page .cad-model-visual::before { background-image: linear-gradient(rgba(79,70,229,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,.16) 1px, transparent 1px); }
+.reference-page .model-visual-label { color: #312e81; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+.reference-page .stage-number, .reference-page .product-seal, .reference-page .signal-card > div > span { color: #4f46e5; }
+.reference-page .bento-radial { background: radial-gradient(circle at 70% 30%, rgba(6,182,212,.22), transparent 45%); }
+.reference-page .bento-lines { background: repeating-linear-gradient(135deg, transparent 0 16px, rgba(79,70,229,.18) 17px 18px); }
+.reference-page .safari-model canvas { min-height: 100%; }
+.reference-page .safari-model .model-visual-meta { top: 14px; }
+.reference-page .safari-model .model-visual-foot { bottom: 12px; }
+.reference-page .product-bento-card,
+.reference-page .signal-card,
+.reference-page .workflow-stage,
+.reference-page .proof-metric { border-radius: 18px; }
+.reference-page h1,
+.reference-page h2,
+.reference-page h3,
+.reference-page p { text-wrap: balance; }
+@media (prefers-reduced-transparency: reduce) {
+  .reference-page .landing-nav { background: var(--black); }
+}

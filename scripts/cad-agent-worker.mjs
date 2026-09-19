@@ -17,6 +17,24 @@ const forbidden = /\b(?:require|import|process|globalThis|Function|eval|WebAssem
 
 let initialized = false;
 async function initCad() { if (!initialized) { replicad.setOC(await openCascade()); initialized = true; } }
+
+// OpenCascade's WASM build uses the wasm exception-handling proposal for its C++ internals: an
+// invalid geometry op (boolean fuse/cut/intersect on degenerate or self-intersecting shapes, a
+// fillet/chamfer radius too large for its edge, a self-intersecting sweep, etc.) throws a raw
+// WebAssembly.Exception rather than a JS Error when running main() inside compile(). Its real
+// message lives behind an internal exception tag the library doesn't export, so it can't be
+// decoded here — `String(error)` on one just gives the useless "[object WebAssembly.Exception]",
+// which otherwise ends up verbatim in buildJob.error and streamed to the client over SSE.
+function describeError(error) {
+  if (error instanceof Error) return error.message;
+  if (typeof WebAssembly !== 'undefined' && error instanceof WebAssembly.Exception) {
+    return 'The OpenCascade geometry kernel crashed while building this model. This is almost always invalid geometry in the generated code — a boolean fuse/cut/intersect on degenerate or self-intersecting shapes, a fillet/chamfer radius too large for its edge, or a self-intersecting sweep.';
+  }
+  if (typeof WebAssembly !== 'undefined' && error instanceof WebAssembly.RuntimeError) {
+    return `A low-level WebAssembly error occurred while building the geometry: ${error.message}`;
+  }
+  try { return JSON.stringify(error); } catch { return String(error); }
+}
 async function event(jobId, stage, agent, summary, tool, detail) {
   const count = await prisma.buildEvent.count({ where: { jobId } });
   await prisma.buildEvent.create({ data: { jobId, sequence: count + 1, stage, agent, summary, tool, detail } });
@@ -33,9 +51,12 @@ function fallbackCode(prompt) {
 }
 async function generateCode(prompt, plan) {
   if (!apiKey) return fallbackCode(prompt);
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `Return only Replicad JavaScript. Define main(). Build this planned object: ${JSON.stringify(plan)}. User request: ${prompt}` }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 12000 } }) });
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: `Return only Replicad JavaScript. Define main(). Build this planned object: ${JSON.stringify(plan)}. User request: ${prompt}` }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 32768 } }) });
   if (!response.ok) throw new Error(`Generator failed (${response.status}).`);
   const text = (await response.json())?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('') || '';
+  // A response cut off by the token limit has unbalanced braces/parens; compile() will throw a
+  // SyntaxError on it, which the caller's retry loop already catches and repairs by swapping in
+  // fallbackCode() — no special-casing needed here beyond not silently trusting the raw text.
   return text.replace(/```(?:javascript|js)?/gi, '').replace(/```/g, '').trim();
 }
 function compile(code) {
@@ -90,7 +111,7 @@ async function processJob(job) {
     await event(job.id, 'evaluate', 'BREP evaluator', 'Validated the BREP and generated STEP, STL, preview, and audit files.', 'OpenCascade', { metrics, validation });
     await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.SUCCEEDED, revisionId: revision.id, finishedAt: new Date() } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = describeError(error);
     await event(job.id, 'failed', 'orchestrator', 'Build failed before a validated BREP was produced.', undefined, { message });
     await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.FAILED, error: message, finishedAt: new Date() } });
   }

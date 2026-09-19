@@ -6,6 +6,7 @@ import './landing.css';
 import './magic-overrides.css';
 import './reference.css';
 import './ai-studio.css';
+import './chili-editor.css';
 
 export const metadata: Metadata = {
   title: 'Agentic CAD — Design by intent',

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
 import { Badge } from '@/components/magicui/badge';
 import type { AiCadPart } from './ai-cad-worker';
+import { HANDOFF_FROM_CHILI_NAME, HANDOFF_FROM_CHILI_STEP, HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
 
 function Scene({ parts }: { parts: AiCadPart[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -99,7 +100,9 @@ type Status = 'idle' | 'generating' | 'building' | 'ready' | 'error';
 type WorkerMessage =
   | { id: number; type: 'progress'; part: AiCadPart; index: number; total: number }
   | { id: number; type: 'done'; result: { parts: AiCadPart[]; metrics: { volume: number; surfaceArea: number } } }
-  | { id: number; type: 'error'; error: string };
+  | { id: number; type: 'error'; error: string }
+  | { id: number; type: 'step-exported'; step: string }
+  | { id: number; type: 'step-error'; error: string };
 
 export function AiCadStudio() {
   const [prompt, setPrompt] = useState('A hex-head M8 bolt, 40mm long');
@@ -108,13 +111,24 @@ export function AiCadStudio() {
   const [message, setMessage] = useState('Describe a part and generate it.');
   const [code, setCode] = useState('');
   const [parts, setParts] = useState<AiCadPart[]>([]);
+  const [exportingToChili, setExportingToChili] = useState(false);
   const worker = useRef<Worker | null>(null);
   const requestId = useRef(0);
+  const stepRequestId = useRef(0);
+  const stepResolvers = useRef(new Map<number, { resolve: (step: string) => void; reject: (error: Error) => void }>());
 
   useEffect(() => {
     const nextWorker = new Worker(new URL('./ai-cad-worker.ts', import.meta.url));
     worker.current = nextWorker;
     nextWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      if (event.data.type === 'step-exported' || event.data.type === 'step-error') {
+        const pending = stepResolvers.current.get(event.data.id);
+        stepResolvers.current.delete(event.data.id);
+        if (!pending) return;
+        if (event.data.type === 'step-exported') pending.resolve(event.data.step);
+        else pending.reject(new Error(event.data.error));
+        return;
+      }
       if (event.data.id !== requestId.current) return;
       if (event.data.type === 'error') {
         setStatus('error');
@@ -135,6 +149,26 @@ export function AiCadStudio() {
     return () => nextWorker.terminate();
   }, []);
 
+  // Pick up a model handed back from the ChiliCAD editor (see /chili-editor and
+  // components/cad/cad-handoff.ts) after a redirect to /ai?fromChili=1. The localStorage
+  // read+clear runs synchronously so it only ever fires once (including under React 18 dev
+  // StrictMode's mount->cleanup->mount replay), but the actual postMessage is deferred with
+  // setTimeout so it targets whichever worker instance is still standing once that replay
+  // settles, rather than the first one (which StrictMode immediately terminates).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('fromChili') !== '1') return;
+    const step = window.localStorage.getItem(HANDOFF_FROM_CHILI_STEP);
+    window.localStorage.removeItem(HANDOFF_FROM_CHILI_STEP);
+    window.localStorage.removeItem(HANDOFF_FROM_CHILI_NAME);
+    window.history.replaceState({}, '', '/ai');
+    if (!step) return;
+    setStatus('building');
+    setMessage('Importing model from ChiliCAD…');
+    setCode('');
+    setParts([]);
+    setTimeout(() => worker.current?.postMessage({ id: ++requestId.current, type: 'import-step', step }), 0);
+  }, []);
+
   const runGeneration = async (userText: string, { refine }: { refine: boolean }) => {
     if (!userText.trim() || status === 'generating' || status === 'building') return;
     setStatus('generating');
@@ -151,9 +185,28 @@ export function AiCadStudio() {
       setCode(data.code as string);
       setStatus('building');
       setMessage('Building geometry with Replicad…');
-      worker.current?.postMessage({ id: ++requestId.current, code: data.code });
+      worker.current?.postMessage({ id: ++requestId.current, type: 'run', code: data.code });
       if (refine) setRefinement('');
     } catch (error) {
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const editInChiliCad = async () => {
+    if (!worker.current || parts.length === 0 || exportingToChili) return;
+    setExportingToChili(true);
+    try {
+      const id = ++stepRequestId.current;
+      const step = await new Promise<string>((resolve, reject) => {
+        stepResolvers.current.set(id, { resolve, reject });
+        worker.current?.postMessage({ id, type: 'export-step' });
+      });
+      window.localStorage.setItem(HANDOFF_TO_CHILI_STEP, step);
+      window.localStorage.setItem(HANDOFF_TO_CHILI_NAME, 'agentic-cad-model');
+      window.location.href = '/chili-editor';
+    } catch (error) {
+      setExportingToChili(false);
       setStatus('error');
       setMessage(error instanceof Error ? error.message : String(error));
     }
@@ -185,6 +238,11 @@ export function AiCadStudio() {
           <i className={`status-dot ${status === 'error' ? 'status-dot-error' : ''}`} />
           {message}
         </div>
+        {parts.length > 0 && (
+          <Button variant="outline" onClick={editInChiliCad} disabled={busy || exportingToChili}>
+            {exportingToChili ? 'Sending to ChiliCAD…' : 'Edit in ChiliCAD'} <span>↗</span>
+          </Button>
+        )}
         {canRefine && (
           <div className="ai-cad-refine">
             <div className="control-header">

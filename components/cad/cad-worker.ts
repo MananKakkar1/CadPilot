@@ -1,4 +1,6 @@
 import type { CadModelParams, CadModelResult } from './replicad-models';
+import { labelForModel } from './replicad-models';
+import { buildLandingShape } from './landing-model-builders';
 type WorkerRequest = { id: number; params: CadModelParams };
 let replicadReady: Promise<any> | null = null;
 async function loadReplicad() {
@@ -9,14 +11,10 @@ async function loadReplicad() {
   return replicadReady;
 }
 async function buildModel({ model, values }: CadModelParams): Promise<CadModelResult> {
-  const { makeBox, makeCylinder } = await loadReplicad(); let shape: any;
-  if (model === 'spur-gear') {
-    const outer = values.teeth * values.module * 0.55 + values.module; shape = makeCylinder(outer, values.thickness);
-    for (let i = 0; i < values.teeth; i += 1) { const angle = (i / values.teeth) * Math.PI * 2; const tooth = values.module * 0.9; const x = Math.cos(angle) * (outer - tooth / 2); const y = Math.sin(angle) * (outer - tooth / 2); shape = shape.fuse(makeBox([x - tooth / 2, y - tooth / 2, 0], [x + tooth / 2, y + tooth / 2, values.thickness])); }
-    shape = shape.cut(makeCylinder(Math.max(values.bore * 0.32, outer * 0.28), values.thickness + 0.2, [0, 0, -0.1]));
-  } else { const width = values.width / 10; const height = values.height / 10; shape = makeBox([-width / 2, -3, 0], [width / 2, 3, 3]).fuse(makeBox([-width / 2, 0, 0], [width / 2, 3, height])).fuse(makeBox([-width / 2, 0, 0], [width / 2, height * 0.6, 3])); }
+  const replicad = await loadReplicad();
+  const shape = buildLandingShape(replicad, model, values);
   const mesh = shape.mesh({ tolerance: 0.08, angularTolerance: 20 });
-  return { mesh: { vertices: mesh.vertices, triangles: mesh.triangles, normals: mesh.normals }, metrics: { volume: Math.round(shape.volume()), surfaceArea: Math.round(shape.surfaceArea()), valid: true }, label: model === 'spur-gear' ? 'Replicad solid · spur gear' : 'Replicad solid · phone stand' };
+  return { mesh: { vertices: mesh.vertices, triangles: mesh.triangles, normals: mesh.normals }, metrics: { volume: Math.round(shape.volume()), surfaceArea: Math.round(shape.surfaceArea()), valid: true }, label: `Replicad solid · ${labelForModel(model)}` };
 }
 function fallbackMesh({ model, values }: CadModelParams): CadModelResult {
   const vertices: number[] = []; const triangles: number[] = [];

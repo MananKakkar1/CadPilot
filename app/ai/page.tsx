@@ -6,7 +6,7 @@ export default function AiStudioPage() {
     <main className="ai-studio-shell">
       <header className="ai-studio-nav">
         <Link href="/" className="studio-back">← Back to Agentic CAD</Link>
-        <span className="studio-title">AI CAD agent <i className="status-dot" /> Gemini + Replicad</span>
+        <span className="studio-title">AI CAD agent · Gemini + Replicad</span>
       </header>
       <AiCadStudio />
     </main>

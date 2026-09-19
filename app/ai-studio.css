@@ -17,4 +17,7 @@
 .ai-cad-references{margin:0;padding:10px 12px;border-top:1px solid var(--line);list-style:none;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto}
 .ai-cad-references a{color:var(--accent);font-size:12px;line-height:1.5;word-break:break-word}
 .ai-cad-viewport{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 44%,rgba(223,112,72,.13),transparent 29%),#171715}
+.cad-export-dock{position:absolute;right:22px;bottom:22px;margin:0;z-index:4;border-color:var(--line-strong);background:rgba(18,18,17,.72);color:var(--text)}
+.cad-export-dock [title]{color:var(--text);transition:background .2s ease,color .2s ease}
+.cad-export-dock [title]:hover{background:var(--accent);color:#fff}
 @media(max-width:860px){.ai-cad-studio{grid-template-columns:1fr}.ai-cad-viewport{min-height:420px}}

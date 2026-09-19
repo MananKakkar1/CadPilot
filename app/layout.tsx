@@ -5,7 +5,7 @@ import './tailwind.css';
 import './landing.css';
 import './magic-overrides.css';
 import './reference.css';
-import './ai-studio.css';
+import './chili-editor.css';
 import './agent-workspace.css';
 import './auth.css';
 import 'katex/dist/katex.min.css';

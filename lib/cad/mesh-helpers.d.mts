@@ -1,0 +1,21 @@
+export type Vec3 = [number, number, number];
+export type RawMesh = { vertices: number[]; triangles: number[] };
+type GridOptions = { wrapCols?: boolean; wrapRows?: boolean; flip?: boolean };
+export function meshFromGrid(rows: number, cols: number, pointAt: (i: number, j: number) => Vec3, options?: GridOptions): RawMesh;
+export function meshFromParametric(fn: (u: number, v: number) => Vec3, uSteps: number, vSteps: number, options?: { closeU?: boolean; closeV?: boolean; flip?: boolean }): RawMesh;
+export function latheMesh(profile: Array<[number, number]>, segments?: number, options?: { flip?: boolean }): RawMesh;
+export function mergeMeshes(meshes: RawMesh[]): RawMesh;
+export function translateMesh(mesh: RawMesh, offset: Vec3): RawMesh;
+export function scaleMesh(mesh: RawMesh, factors: Vec3): RawMesh;
+export function validateRawMesh(mesh: RawMesh, label: string, maxTriangles?: number): void;
+export function measureRawMesh(mesh: RawMesh): { volume: number; surfaceArea: number };
+export function findDisconnectedParts(parts: Array<{ name: string; vertices: number[] }>, thresholdFraction?: number): string[];
+export const meshHelpers: {
+  meshFromGrid: typeof meshFromGrid;
+  meshFromParametric: typeof meshFromParametric;
+  latheMesh: typeof latheMesh;
+  mergeMeshes: typeof mergeMeshes;
+  translateMesh: typeof translateMesh;
+  scaleMesh: typeof scaleMesh;
+};
+export type MeshHelpers = typeof meshHelpers;

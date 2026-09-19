@@ -17,7 +17,7 @@ import type {
 } from "canvas-confetti"
 import confetti from "canvas-confetti"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/magicui/button"
 
 export type ConfettiRef = {
   fire: (options?: ConfettiOptions) => Promise<void> | void

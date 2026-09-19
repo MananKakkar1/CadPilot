@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/magicui/button';
 import { CadModelVisual } from '@/components/cad/cad-model-visual';
 import type { CadModelResult } from '@/components/cad/replicad-models';
 

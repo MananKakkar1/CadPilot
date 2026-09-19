@@ -1,5 +1,5 @@
 'use client';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/magicui/badge';
 import { CadModelVisual } from '@/components/cad/cad-model-visual';
 import type { CadModelResult } from '@/components/cad/replicad-models';
 

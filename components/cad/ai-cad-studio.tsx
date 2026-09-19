@@ -94,6 +94,8 @@ function Scene({ parts }: { parts: AiCadPart[] }) {
   );
 }
 
+const MAX_REPAIR_ATTEMPTS = 2;
+
 type Status = 'idle' | 'generating' | 'building' | 'ready' | 'error';
 type WorkerMessage =
   | { id: number; type: 'progress'; part: AiCadPart; index: number; total: number }
@@ -113,6 +115,37 @@ export function AiCadStudio() {
   const [references, setReferences] = useState<{ title: string; uri: string }[]>([]);
   const worker = useRef<Worker | null>(null);
   const requestId = useRef(0);
+  const codeRef = useRef('');
+  const repairAttempts = useRef(0);
+  const repairRef = useRef<(failure: string) => Promise<void>>(async () => {});
+
+  // Sends the failing code and its error back to Gemini and rebuilds with the corrected version.
+  const repair = async (failure: string) => {
+    setStatus('generating');
+    setParts([]);
+    setMessage(`Build failed (${failure}) — asking Gemini to fix it, attempt ${repairAttempts.current}/${MAX_REPAIR_ATTEMPTS}…`);
+    try {
+      const response = await fetch('/api/generate-cad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `The code failed to build with this error: ${failure}\nFix the code so it builds and keep the design as close to the original as possible.`,
+          previousCode: codeRef.current,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error ?? 'Failed to repair the code.');
+      codeRef.current = data.code as string;
+      setCode(data.code as string);
+      setStatus('building');
+      setMessage('Rebuilding with the corrected code…');
+      worker.current?.postMessage({ id: ++requestId.current, code: data.code });
+    } catch (error) {
+      setStatus('error');
+      setMessage(`${failure} — automatic repair failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  repairRef.current = repair;
 
   useEffect(() => {
     const nextWorker = new Worker(new URL('./ai-cad-worker.ts', import.meta.url));
@@ -120,8 +153,15 @@ export function AiCadStudio() {
     nextWorker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       if (event.data.id !== requestId.current) return;
       if (event.data.type === 'error') {
+        // Generated code often has a small API mistake (e.g. a method that doesn't exist). Ask Gemini to fix it from the
+        // error a couple of times before showing the failure.
+        if (repairAttempts.current < MAX_REPAIR_ATTEMPTS && codeRef.current) {
+          repairAttempts.current += 1;
+          void repairRef.current(event.data.error);
+          return;
+        }
         setStatus('error');
-        setMessage(event.data.error);
+        setMessage(repairAttempts.current > 0 ? `${event.data.error} — Gemini couldn't fix this automatically (${repairAttempts.current} attempt${repairAttempts.current === 1 ? '' : 's'}). Try rephrasing the prompt.` : event.data.error);
         return;
       }
       if (event.data.type === 'progress') {
@@ -134,7 +174,8 @@ export function AiCadStudio() {
         setStatus('ready');
         const partCount = event.data.result.parts.length;
         const fidelityNote = passesRef.current === 2 ? ' · refined for fidelity (2-pass)' : '';
-        setMessage(`Model built successfully — ${partCount} part${partCount === 1 ? '' : 's'}${fidelityNote}.`);
+        const repairNote = repairAttempts.current > 0 ? ` · auto-fixed by Gemini (${repairAttempts.current} repair${repairAttempts.current === 1 ? '' : 's'})` : '';
+        setMessage(`Model built successfully — ${partCount} part${partCount === 1 ? '' : 's'}${fidelityNote}${repairNote}.`);
       }
     };
     return () => nextWorker.terminate();
@@ -146,6 +187,7 @@ export function AiCadStudio() {
     setMessage(refine ? 'Asking Gemini to refine the model…' : 'Asking Gemini for replicad code, then running a second pass to refine it for fidelity… high-detail assemblies can take a couple of minutes.');
     setParts([]);
     setReferences([]);
+    repairAttempts.current = 0;
     try {
       const response = await fetch('/api/generate-cad', {
         method: 'POST',
@@ -154,6 +196,7 @@ export function AiCadStudio() {
       });
       const data = await response.json();
       if (!response.ok || data.error) throw new Error(data.error ?? 'Failed to generate code.');
+      codeRef.current = data.code as string;
       setCode(data.code as string);
       setPasses(data.passes === 2 ? 2 : 1);
       setReferences(Array.isArray(data.references) ? data.references : []);

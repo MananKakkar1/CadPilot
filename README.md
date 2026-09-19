@@ -12,3 +12,14 @@ Use Node.js 20 or newer. Install with npm on macOS, Windows, or Linux; npm selec
 npm install
 npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000). This is a Next.js app, so serve it with `next dev` or `next start`; a static file server or an Express server will return `Cannot GET /` because it does not understand the App Router.
+
+For a production check:
+
+```bash
+npm run build
+npm run start
+```
+
+To build and start the production server in one command, use `npm run start:prod`.

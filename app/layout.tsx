@@ -5,6 +5,7 @@ import './tailwind.css';
 import './landing.css';
 import './magic-overrides.css';
 import './reference.css';
+import './ai-studio.css';
 
 export const metadata: Metadata = {
   title: 'Agentic CAD — Design by intent',

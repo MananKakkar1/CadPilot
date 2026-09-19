@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/magicui/button';
 
 export default function Studio() {
   const [status, setStatus] = useState('Ready to build');

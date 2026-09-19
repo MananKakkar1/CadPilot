@@ -1,7 +1,7 @@
 'use client';
 import { useRef } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { AnimatedBeam } from '@/components/ui/animated-beam';
+import { Badge } from '@/components/magicui/badge';
+import { AnimatedBeam } from '@/components/magicui/animated-beam';
 import { CadModelVisual } from '@/components/cad/cad-model-visual';
 import type { CadModelResult } from '@/components/cad/replicad-models';
 

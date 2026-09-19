@@ -4,4 +4,6 @@ out/
 .vite/
 .DS_Store
 *.local
+
 .env
+*.tsbuildinfo

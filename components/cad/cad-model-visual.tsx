@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/magicui/badge';
 import type { CadModelId, CadModelParams, CadModelResult } from './replicad-models';
 import { labelForModel } from './replicad-models';
 

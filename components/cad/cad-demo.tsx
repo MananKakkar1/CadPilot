@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { TooltipHint as Tooltip } from '@/components/ui/tooltip';
+import { Button } from '@/components/magicui/button';
+import { Badge } from '@/components/magicui/badge';
+import { Slider } from '@/components/magicui/slider';
+import { TooltipHint as Tooltip } from '@/components/magicui/tooltip';
 import type { CadModelId, CadModelParams, CadModelResult, CadModelValues } from './replicad-models';
 import { defaultCadValues, labelForModel } from './replicad-models';
 

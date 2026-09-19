@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Pause, Play } from "lucide-react"
 import { renderToString } from "react-dom/server"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/magicui/button"
 
 interface Icon {
   x: number

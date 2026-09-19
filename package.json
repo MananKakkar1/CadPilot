@@ -8,6 +8,7 @@
     "start": "next start",
     "start:prod": "npm run build && next start",
     "lint": "next lint",
+    "gen:replicad-api": "node scripts/gen-replicad-api.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",

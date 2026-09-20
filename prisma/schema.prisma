@@ -58,6 +58,41 @@ enum BuildStatus {
   CANCELLED
 }
 
+enum AgentRunStatus {
+  QUEUED
+  PLANNING
+  AWAITING_APPROVAL
+  EXECUTING
+  VALIDATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AgentStepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  AWAITING_APPROVAL
+}
+
+enum AgentStepType {
+  PLAN
+  TOOL
+  SUBAGENT
+  VALIDATION
+  OUTPUT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum ArtifactKind {
   SOURCE
   INTENT
@@ -66,6 +101,17 @@ enum ArtifactKind {
   STEP
   STL
   AUDIT
+  MARKDOWN
+  MERMAID
+  LATEX
+  BLUEPRINT_SVG
+  BLUEPRINT_PDF
+  BLUEPRINT_DXF
+  SKETCH_SVG
+  SKETCH_DXF
+  THREE_MF
+  VALIDATION_REPORT
+  AGENT_REPORT
 }
 
 model Project {
@@ -81,6 +127,7 @@ model Project {
   revisions           Revision[]        @relation("ProjectRevisions")
   jobs                BuildJob[]
   conversations       Conversation[]
+  agentRuns           AgentRun[]
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
 
@@ -89,24 +136,24 @@ model Project {
 }
 
 model Revision {
-  id             String       @id @default(uuid()) @db.Uuid
-  projectId      String       @map("project_id") @db.Uuid
-  project        Project      @relation("ProjectRevisions", fields: [projectId], references: [id], onDelete: Cascade)
-  revisionNumber Int          @map("revision_number")
-  parentId       String?      @map("parent_id") @db.Uuid
-  parent         Revision?    @relation("RevisionParent", fields: [parentId], references: [id], onDelete: SetNull)
-  children       Revision[]   @relation("RevisionParent")
+  id             String     @id @default(uuid()) @db.Uuid
+  projectId      String     @map("project_id") @db.Uuid
+  project        Project    @relation("ProjectRevisions", fields: [projectId], references: [id], onDelete: Cascade)
+  revisionNumber Int        @map("revision_number")
+  parentId       String?    @map("parent_id") @db.Uuid
+  parent         Revision?  @relation("RevisionParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Revision[] @relation("RevisionParent")
   prompt         String
   intent         Json
   plan           Json
   metrics        Json?
   validation     Json?
-  sourceCode     String       @map("source_code")
-  isValid        Boolean      @default(false) @map("is_valid")
+  sourceCode     String     @map("source_code")
+  isValid        Boolean    @default(false) @map("is_valid")
   artifacts      Artifact[]
   buildJob       BuildJob?
-  publishedFor   Project?     @relation("PublishedRevision")
-  createdAt      DateTime     @default(now()) @map("created_at")
+  publishedFor   Project?   @relation("PublishedRevision")
+  createdAt      DateTime   @default(now()) @map("created_at")
 
   @@unique([projectId, revisionNumber])
   @@index([projectId, createdAt])
@@ -114,37 +161,38 @@ model Revision {
 }
 
 model BuildJob {
-  id          String      @id @default(uuid()) @db.Uuid
-  projectId   String      @map("project_id") @db.Uuid
-  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  revisionId  String?     @unique @map("revision_id") @db.Uuid
-  revision    Revision?   @relation(fields: [revisionId], references: [id], onDelete: SetNull)
-  prompt      String
-  parentId    String?     @map("parent_id") @db.Uuid
-  status      BuildStatus @default(QUEUED)
-  error       String?
-  claimedAt   DateTime?   @map("claimed_at")
-  startedAt   DateTime?   @map("started_at")
-  finishedAt  DateTime?   @map("finished_at")
-  events      BuildEvent[]
-  createdAt   DateTime    @default(now()) @map("created_at")
+  id         String       @id @default(uuid()) @db.Uuid
+  projectId  String       @map("project_id") @db.Uuid
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisionId String?      @unique @map("revision_id") @db.Uuid
+  revision   Revision?    @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  prompt     String
+  parentId   String?      @map("parent_id") @db.Uuid
+  status     BuildStatus  @default(QUEUED)
+  error      String?
+  claimedAt  DateTime?    @map("claimed_at")
+  startedAt  DateTime?    @map("started_at")
+  finishedAt DateTime?    @map("finished_at")
+  events     BuildEvent[]
+  createdAt  DateTime     @default(now()) @map("created_at")
+  agentRun   AgentRun?
 
   @@index([status, createdAt])
   @@map("build_jobs")
 }
 
 model BuildEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  jobId     String   @map("job_id") @db.Uuid
-  job       BuildJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  sequence  Int
-  stage     String
-  agent     String
-  tool      String?
-  summary   String
-  detail    Json?
-  durationMs Int?    @map("duration_ms")
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid()) @db.Uuid
+  jobId      String   @map("job_id") @db.Uuid
+  job        BuildJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  sequence   Int
+  stage      String
+  agent      String
+  tool       String?
+  summary    String
+  detail     Json?
+  durationMs Int?     @map("duration_ms")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@unique([jobId, sequence])
   @@index([jobId, createdAt])
@@ -152,27 +200,135 @@ model BuildEvent {
 }
 
 model Artifact {
-  id         String       @id @default(uuid()) @db.Uuid
-  revisionId String       @map("revision_id") @db.Uuid
-  revision   Revision     @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  id         String        @id @default(uuid()) @db.Uuid
+  revisionId String        @map("revision_id") @db.Uuid
+  revision   Revision      @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   kind       ArtifactKind
   filename   String
-  mimeType   String       @map("mime_type")
-  storageKey String       @map("storage_key")
-  byteSize   Int          @map("byte_size")
-  createdAt  DateTime     @default(now()) @map("created_at")
+  mimeType   String        @map("mime_type")
+  storageKey String        @map("storage_key")
+  byteSize   Int           @map("byte_size")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  outputs    AgentOutput[]
 
   @@unique([revisionId, kind])
   @@map("artifacts")
 }
 
+model AgentRun {
+  id         String            @id @default(uuid()) @db.Uuid
+  projectId  String            @map("project_id") @db.Uuid
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buildJobId String?           @unique @map("build_job_id") @db.Uuid
+  buildJob   BuildJob?         @relation(fields: [buildJobId], references: [id], onDelete: SetNull)
+  prompt     String
+  mode       String            @default("execute")
+  status     AgentRunStatus    @default(QUEUED)
+  steps      AgentStep[]
+  events     AgentEvent[]
+  subagents  AgentSubagent[]
+  outputs    AgentOutput[]
+  approvals  ApprovalRequest[]
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  @@index([projectId, createdAt])
+  @@map("agent_runs")
+}
+
+model AgentStep {
+  id         String            @id @default(uuid()) @db.Uuid
+  runId      String            @map("run_id") @db.Uuid
+  run        AgentRun          @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sequence   Int
+  type       AgentStepType
+  status     AgentStepStatus   @default(PENDING)
+  title      String
+  summary    String?
+  input      Json?
+  output     Json?
+  startedAt  DateTime?         @map("started_at")
+  finishedAt DateTime?         @map("finished_at")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  approvals  ApprovalRequest[]
+  outputs    AgentOutput[]
+
+  @@unique([runId, sequence])
+  @@index([runId, createdAt])
+  @@map("agent_steps")
+}
+
+model AgentEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  runId     String   @map("run_id") @db.Uuid
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sequence  Int
+  type      String
+  summary   String
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([runId, sequence])
+  @@index([runId, createdAt])
+  @@map("agent_events")
+}
+
+model AgentSubagent {
+  id        String          @id @default(uuid()) @db.Uuid
+  runId     String          @map("run_id") @db.Uuid
+  run       AgentRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role      String
+  status    AgentStepStatus @default(PENDING)
+  summary   String?
+  threadRef String?         @map("thread_ref")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@index([runId, createdAt])
+  @@map("agent_subagents")
+}
+
+model AgentOutput {
+  id         String     @id @default(uuid()) @db.Uuid
+  runId      String     @map("run_id") @db.Uuid
+  run        AgentRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  stepId     String?    @map("step_id") @db.Uuid
+  step       AgentStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  artifactId String?    @map("artifact_id") @db.Uuid
+  artifact   Artifact?  @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+  kind       String
+  inlineBody String?    @map("inline_body")
+  mimeType   String?    @map("mime_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@index([runId, createdAt])
+  @@map("agent_outputs")
+}
+
+model ApprovalRequest {
+  id          String         @id @default(uuid()) @db.Uuid
+  runId       String         @map("run_id") @db.Uuid
+  run         AgentRun       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  stepId      String?        @map("step_id") @db.Uuid
+  step        AgentStep?     @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  action      String
+  risk        String
+  explanation String
+  status      ApprovalStatus @default(PENDING)
+  decidedAt   DateTime?      @map("decided_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@index([runId, status])
+  @@map("approval_requests")
+}
+
 model Conversation {
-  id        String    @id @default(uuid()) @db.Uuid
-  projectId String    @map("project_id") @db.Uuid
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String        @id @default(uuid()) @db.Uuid
+  projectId String        @map("project_id") @db.Uuid
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   messages  ChatMessage[]
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
 
   @@unique([projectId])
   @@map("conversations")

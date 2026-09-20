@@ -8,9 +8,9 @@ import { LandingSignals } from '@/components/landing/landing-signals';
 import { ProductSurface } from '@/components/landing/product-surface';
 import { generateLandingModel } from '@/components/cad/replicad-server-model';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export default async function Home() {
-  const [gear, robot, table] = await Promise.all([generateLandingModel('spur-gear'), generateLandingModel('desktop-robot'), generateLandingModel('workbench-table')]);
-  return <main className="landing-shell reference-page"><LandingNav /><Hero model={gear} /><LandingSignals /><ProductSurface model={robot} /><Workflow model={table} /><ProofSection model={gear} /><FinalCta /><footer className="landing-footer"><Image src="/brand/agentic-cad-logo.svg" alt="Agentic CAD" width={240} height={64} /><span>Design intent → editable geometry.</span><span>© 2026 Agentic CAD</span></footer></main>;
+  const gear = await generateLandingModel('spur-gear');
+  return <main className="landing-shell reference-page"><LandingNav /><Hero model={gear} /><LandingSignals /><ProductSurface model={gear} /><Workflow model={gear} /><ProofSection model={gear} /><FinalCta /><footer className="landing-footer"><Image src="/brand/agentic-cad-logo.svg" alt="Agentic CAD" width={240} height={64} /><span>Design intent → editable geometry.</span><span>© 2026 Agentic CAD</span></footer></main>;
 }

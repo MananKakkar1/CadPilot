@@ -9,6 +9,8 @@ import './chili-editor.css';
 import './agent-workspace.css';
 import './auth.css';
 import 'katex/dist/katex.min.css';
+import './ui-quality.css';
+import './codex.css';
 
 export const metadata: Metadata = {
   title: 'Agentic CAD — Design by intent',
@@ -16,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to content</a><div id="main-content">{children}</div></body></html>;
 }

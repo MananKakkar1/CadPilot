@@ -11,7 +11,7 @@ type BridgeMessage =
 
 type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
 
-export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: string | null; parentRevisionId: string | null }) {
+export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false }: { projectSlug: string | null; parentRevisionId: string | null; embedded?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -91,8 +91,8 @@ export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: st
   };
 
   return (
-    <div className="chili-editor-grid">
-      <aside className="chili-editor-panel">
+    <div className={`chili-editor-grid ${embedded ? 'chili-editor-grid-embedded' : ''}`}>
+      {!embedded && <aside className="chili-editor-panel">
         <p className="chili-editor-eyebrow">CHILICAD EDITOR</p>
         <h1>Full parametric<br />editing, live.</h1>
         <p className="chili-editor-lede">
@@ -108,7 +108,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: st
             Back to project <span>→</span>
           </Button>
         )}
-      </aside>
+      </aside>}
       <section className="chili-editor-viewport" aria-label="ChiliCAD editor">
         {pluginUrl && (
           <iframe

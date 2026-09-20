@@ -220,3 +220,13 @@
 @media (prefers-reduced-transparency: reduce) {
   .reference-page .landing-nav { background: var(--black); }
 }
+
+/* Performance pass: the landing page uses one active viewer and quiet semantic sections. */
+.cad-model-placeholder { min-height: inherit; background: linear-gradient(135deg, rgba(79,70,229,.08), rgba(6,182,212,.08)); }
+.product-notes { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; border-top:1px solid var(--line); }
+.product-notes > div { padding-top:20px; display:grid; gap:8px; }
+.product-notes strong { font-size:14px; color:var(--text); }
+.product-notes span { color:#667085; font-size:13px; line-height:1.5; }
+.workflow-map { list-style:none; padding:0; }
+.workflow-stage { display:block; }
+@media (max-width:780px) { .product-notes { grid-template-columns:1fr; gap:0; } .product-notes > div { padding:18px 0; border-bottom:1px solid var(--line); } }

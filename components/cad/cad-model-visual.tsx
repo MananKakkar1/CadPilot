@@ -12,29 +12,48 @@ const modelColors: Record<CadModelId, number> = {
   'desktop-robot': 0x7c3aed,
 };
 
-export function CadModelVisual({ model, initialResult, eyebrow = 'REPLICAD / OPENCASCADE', className = '' }: { model: CadModelId; initialResult?: CadModelResult; eyebrow?: string; className?: string }) {
+export function CadModelVisual({ model, initialResult, eyebrow = 'REPLICAD / OPENCASCADE', className = '', priority = false }: { model: CadModelId; initialResult?: CadModelResult; eyebrow?: string; className?: string; priority?: boolean }) {
+  const containerRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const viewerRef = useRef<Viewer | null>(null);
   const [result, setResult] = useState<CadModelResult | null>(null);
+  const [visible, setVisible] = useState(priority);
 
   useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '240px' });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [priority]);
+
+  useEffect(() => {
+    if (!visible) return;
     if (initialResult) { setResult(initialResult); return; }
     const worker = new Worker(new URL('./cad-worker.ts', import.meta.url));
     worker.onmessage = (event: MessageEvent<{ result?: CadModelResult }>) => setResult(event.data.result ?? null);
     worker.postMessage({ id: 1, params: { model, values: { teeth: 20, module: 2, bore: 10, thickness: 5, tilt: 68, width: 72, height: 92 } } as CadModelParams });
     return () => worker.terminate();
-  }, [initialResult, model]);
+  }, [initialResult, model, visible]);
 
   useEffect(() => {
     let disposed = false;
-    let viewer: Viewer | null = null;
-    if (!canvasRef.current) return;
+    if (!visible || !canvasRef.current) return;
     createViewer(canvasRef.current, { interactive: false, autoRotate: true }).then((created) => {
       if (disposed) return created.dispose();
-      viewer = created;
+      viewerRef.current = created;
       created.setParts(result ? [{ mesh: result.mesh, color: modelColors[model] }] : []);
     });
-    return () => { disposed = true; viewer?.dispose(); };
+    return () => { disposed = true; viewerRef.current?.dispose(); viewerRef.current = null; };
+  }, [model, visible]);
+
+  useEffect(() => {
+    viewerRef.current?.setParts(result ? [{ mesh: result.mesh, color: modelColors[model] }] : []);
   }, [model, result]);
 
-  return <figure className={`cad-model-visual ${className}`} aria-label={`${labelForModel(model)} generated with Replicad`}><div className="model-visual-meta"><span className="model-visual-label">{eyebrow}</span><span>{labelForModel(model)}</span></div><canvas ref={canvasRef} /><div className="model-visual-foot"><span>Valid solid</span><span>{result ? `${result.metrics.volume} mm³` : 'Building geometry'}</span></div></figure>;
+  return <figure ref={containerRef} className={`cad-model-visual ${className}`} aria-label={`${labelForModel(model)} generated with Replicad`}><div className="model-visual-meta"><span className="model-visual-label">{eyebrow}</span><span>{labelForModel(model)}</span></div>{visible ? <canvas ref={canvasRef} /> : <div className="cad-model-placeholder" aria-hidden="true" />}<div className="model-visual-foot"><span>{result ? 'Valid solid' : visible ? 'Building geometry' : 'Preview loads on scroll'}</span><span>{result ? `${result.metrics.volume} mm³` : 'Replicad / OpenCascade'}</span></div></figure>;
 }

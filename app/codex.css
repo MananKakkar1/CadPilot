@@ -1,0 +1,25 @@
+.codex-workspace {
+  position: relative;
+}
+
+.codex-body {
+  position: relative;
+  min-height: 0;
+}
+
+.codex-conversation {
+  min-height: 0;
+}
+
+.codex-composer {
+  z-index: 4;
+}
+
+@media (max-width: 820px) {
+  .codex-composer {
+    position: sticky;
+    left: auto;
+    right: auto;
+    bottom: auto;
+  }
+}

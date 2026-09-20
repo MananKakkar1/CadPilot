@@ -152,6 +152,7 @@ async function processJob(job) {
     await saveArtifact(revision.id, ArtifactKind.INTENT, 'intent.json', 'application/json', JSON.stringify(intent, null, 2));
     await saveArtifact(revision.id, ArtifactKind.PLAN, 'plan.json', 'application/json', JSON.stringify(plan, null, 2));
     await saveArtifact(revision.id, ArtifactKind.PREVIEW_MESH, 'preview.json', 'application/json', JSON.stringify(result.preview));
+    await event(job.id, 'preview.ready', 'preview renderer', 'Preview mesh is ready before precise STEP import.', 'mesh-preview', { triangleCount: metrics.triangleCount });
     if (result.step) await saveArtifact(revision.id, ArtifactKind.STEP, 'model.step', 'application/step', result.step);
     await saveArtifact(revision.id, ArtifactKind.STL, 'model.stl', 'model/stl', result.stl);
     await saveArtifact(revision.id, ArtifactKind.THREE_MF, 'model.3mf', 'model/3mf', threeMf(result.preview));

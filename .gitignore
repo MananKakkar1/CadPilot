@@ -8,3 +8,4 @@ out/
 .env
 *.tsbuildinfo
 DEVPOST.md
+.cad-artifacts/

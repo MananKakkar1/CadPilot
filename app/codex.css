@@ -194,6 +194,11 @@
 .codex-artifact-wrap .codex-artifact { border-bottom: 0; margin-bottom: 0; }
 .codex-artifact-preview-image { display: block; width: 100%; max-height: 220px; object-fit: contain; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-top: 6px; }
 .codex-artifact-preview-code { max-height: 260px; overflow: auto; white-space: pre-wrap; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin: 6px 0 0; }
+.codex-print-preflight { display: grid; gap: 8px; margin-top: 8px; }
+.codex-print-checks { display: grid; gap: 4px; font-size: 11px; }
+.codex-print-checks strong { font-size: 12px; }
+.codex-print-checks .passed { color: #15803d; }
+.codex-print-checks .failed { color: #b91c1c; }
 .codex-subagent-action { align-items: flex-start; flex-wrap: wrap; }
 .codex-subagent-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .codex-follow-up { display: flex; gap: 4px; align-items: center; }

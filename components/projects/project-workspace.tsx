@@ -22,6 +22,7 @@ type InspectorTab = 'run' | 'plan' | 'viewport' | 'files' | 'agents';
 
 function ArtifactPreview({ artifact }: { artifact: Artifact }) {
   const [content, setContent] = useState<string | null>(null);
+  const [printReport, setPrintReport] = useState<{ ready: boolean; checks: Array<{ label: string; passed: boolean; detail: string }> } | null>(null);
   const isSvg = artifact.kind.endsWith('_SVG');
   const isText = ['MARKDOWN', 'MERMAID', 'LATEX', 'SOURCE', 'PLAN', 'INTENT', 'AUDIT', 'VALIDATION_REPORT', 'AGENT_REPORT'].includes(artifact.kind);
   useEffect(() => {
@@ -30,7 +31,7 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
   }, [artifact.id, isSvg, isText]);
   if (isSvg) return <img className="codex-artifact-preview-image" src={`/api/artifacts/${artifact.id}?inline=1`} alt={`${artifact.filename} preview`} />;
   if (content === null) return <p className="codex-muted">Loading preview…</p>;
-  return <pre className="codex-artifact-preview-code">{content.slice(0, 12000)}</pre>;
+  return <><pre className="codex-artifact-preview-code">{content.slice(0, 12000)}</pre>{artifact.kind === 'VALIDATION_REPORT' && <div className="codex-print-preflight"><Button variant="outline" size="sm" onClick={async () => { const response = await fetch(`/api/artifacts/${artifact.id}/print-preflight`, { method: 'POST' }); if (response.ok) setPrintReport(await response.json()); }}><Printer /> Run print preflight</Button>{printReport && <div className="codex-print-checks" aria-live="polite"><strong>{printReport.ready ? 'Ready for printer preparation' : 'Print preparation needs attention'}</strong>{printReport.checks.map((check) => <span key={check.label} className={check.passed ? 'passed' : 'failed'}>{check.passed ? '✓' : '×'} {check.label}</span>)}</div>}</div>}</>;
 }
 
 const iconFor = (stage: string) => stage === 'evaluate' ? CheckCircle2 : stage === 'generate' ? FileCode2 : stage === 'repair' ? Wrench : Hammer;

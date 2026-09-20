@@ -41,7 +41,7 @@ This checklist audits the supplied workbench specification against the current r
 - [partial] Render the actual Chili3D production renderer/editor inside the project page through the embedded client surface.
 - [partial] STEP import/export bridge between project revisions and Chili3D.
 - [x] Replace localStorage handoff as the primary embedded path with direct project-page STEP transfer.
-- [partial] Preview readiness is streamed before precise STEP/BREP import; direct mesh rendering in Chili3D remains.
+- [x] Stream the stored preview mesh into Chili3D before precise STEP/BREP import, then remove the temporary preview node after import.
 - [ ] Persist camera, selection, and document state.
 - [partial] Inventory upstream commands and expose registry-backed command actions through the embedded Magic UI Dock; full parameterized command parity remains staged.
 - [partial] Save Chili3D edits as derived revisions without leaving the project page; the project-scoped endpoint and bridge path are implemented, interactive edit/save verification remains.

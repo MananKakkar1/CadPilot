@@ -216,14 +216,27 @@ model Artifact {
 }
 
 model AgentRun {
-  id         String            @id @default(uuid()) @db.Uuid
-  projectId  String            @map("project_id") @db.Uuid
-  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  buildJobId String?           @unique @map("build_job_id") @db.Uuid
-  buildJob   BuildJob?         @relation(fields: [buildJobId], references: [id], onDelete: SetNull)
-  prompt     String
-  mode       String            @default("execute")
-  status     AgentRunStatus    @default(QUEUED)
+  id              String            @id @default(uuid()) @db.Uuid
+  projectId       String            @map("project_id") @db.Uuid
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentRunId     String?           @map("parent_run_id") @db.Uuid
+  parentRun       AgentRun?         @relation("AgentRunTree", fields: [parentRunId], references: [id], onDelete: SetNull)
+  childRuns       AgentRun[]        @relation("AgentRunTree")
+  parentMessageId String?           @map("parent_message_id") @db.Uuid
+  buildJobId      String?           @unique @map("build_job_id") @db.Uuid
+  buildJob        BuildJob?         @relation(fields: [buildJobId], references: [id], onDelete: SetNull)
+  kind            String            @default("PRIMARY")
+  prompt          String
+  title           String?
+  model           String?
+  reasoningEffort String?           @map("reasoning_effort")
+  mode            String            @default("execute")
+  status          AgentRunStatus    @default(QUEUED)
+  startedAt       DateTime?         @map("started_at")
+  finishedAt      DateTime?         @map("finished_at")
+  cancelledAt     DateTime?         @map("cancelled_at")
+  error           String?
+  metadata        Json?
   steps      AgentStep[]
   events     AgentEvent[]
   subagents  AgentSubagent[]
@@ -237,19 +250,26 @@ model AgentRun {
 }
 
 model AgentStep {
-  id         String            @id @default(uuid()) @db.Uuid
-  runId      String            @map("run_id") @db.Uuid
-  run        AgentRun          @relation(fields: [runId], references: [id], onDelete: Cascade)
-  sequence   Int
-  type       AgentStepType
-  status     AgentStepStatus   @default(PENDING)
-  title      String
-  summary    String?
-  input      Json?
-  output     Json?
-  startedAt  DateTime?         @map("started_at")
-  finishedAt DateTime?         @map("finished_at")
-  createdAt  DateTime          @default(now()) @map("created_at")
+  id          String            @id @default(uuid()) @db.Uuid
+  runId       String            @map("run_id") @db.Uuid
+  run         AgentRun          @relation(fields: [runId], references: [id], onDelete: Cascade)
+  parentStepId String?          @map("parent_step_id") @db.Uuid
+  parentStep  AgentStep?        @relation("AgentStepTree", fields: [parentStepId], references: [id], onDelete: SetNull)
+  childSteps  AgentStep[]       @relation("AgentStepTree")
+  sequence    Int
+  type        AgentStepType
+  status      AgentStepStatus   @default(PENDING)
+  agentName   String?           @map("agent_name")
+  label       String?
+  title       String
+  summary     String?
+  input       Json?
+  output      Json?
+  error       String?
+  durationMs  Int?              @map("duration_ms")
+  startedAt   DateTime?         @map("started_at")
+  finishedAt  DateTime?         @map("finished_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
   approvals  ApprovalRequest[]
   outputs    AgentOutput[]
 

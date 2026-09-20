@@ -22,6 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       },
       include: { steps: true, approvals: true },
     });
+    await prisma.agentEvent.create({ data: { runId: run.id, sequence: 1, type: 'run.created', summary: mode === 'plan' ? 'Plan created and waiting for approval.' : 'Agent run queued.', payload: { mode } } });
     return NextResponse.json({ run }, { status: 202 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to create agent run.' }, { status: 400 });

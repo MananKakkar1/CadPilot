@@ -29,6 +29,8 @@ async function event(jobId, stage, agent, summary, tool, detail) {
   const run = await prisma.agentRun.findUnique({ where: { buildJobId: jobId }, select: { id: true } });
   if (run) {
     await prisma.agentEvent.create({ data: { runId: run.id, sequence, type: stage, summary, payload: { agent, tool, detail } } });
+    const status = stage === 'evaluate' ? AgentRunStatus.VALIDATING : stage === 'failed' ? AgentRunStatus.FAILED : AgentRunStatus.EXECUTING;
+    await prisma.agentRun.update({ where: { id: run.id }, data: { status, startedAt: { set: new Date() }, steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.RUNNING, agentName: agent, summary, startedAt: new Date() } } } } });
   }
 }
 function intentFor(prompt) { return { object: prompt.split(/[,.]/)[0].slice(0, 120), units: 'mm', dimensions: {}, constraints: ['valid closed BREP', 'editable dimensions'], materials: ['anodized aluminum'] }; }
@@ -90,7 +92,7 @@ async function processJob(job) {
   await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.RUNNING, startedAt: new Date() } });
   const run = await prisma.agentRun.findUnique({ where: { buildJobId: job.id }, select: { id: true } });
   if (run) {
-    await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.EXECUTING, subagents: { createMany: { data: [{ role: 'geometry planner', status: AgentStepStatus.RUNNING }, { role: 'Replicad author', status: AgentStepStatus.PENDING }, { role: 'validation agent', status: AgentStepStatus.PENDING }, { role: 'artifact generator', status: AgentStepStatus.PENDING }] } } } });
+    await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.EXECUTING, startedAt: new Date(), subagents: { createMany: { data: [{ role: 'geometry planner', status: AgentStepStatus.RUNNING }, { role: 'Replicad author', status: AgentStepStatus.PENDING }, { role: 'validation agent', status: AgentStepStatus.PENDING }, { role: 'artifact generator', status: AgentStepStatus.PENDING }] } } } });
   }
   try {
     await initCad();
@@ -154,12 +156,12 @@ async function processJob(job) {
     await prisma.chatMessage.create({ data: { conversation: { connectOrCreate: { where: { projectId: job.projectId }, create: { projectId: job.projectId } } }, role: 'assistant', content: engineeringReport(nextNumber, intent, plan, metrics, validation, generation), revisionId: revision.id } });
     await event(job.id, 'evaluate', 'BREP evaluator', 'Validated the model and generated STEP, STL, preview, and audit files.', 'OpenCascade', { metrics, validation });
     await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.SUCCEEDED, revisionId: revision.id, finishedAt: new Date() } });
-    if (run) await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.COMPLETED, steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.COMPLETED, finishedAt: new Date() } } }, subagents: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.COMPLETED, summary: 'Completed as part of the validated CAD build.' } } } } });
+    if (run) await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.COMPLETED, finishedAt: new Date(), steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.COMPLETED, finishedAt: new Date() } } }, subagents: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.COMPLETED, summary: 'Completed as part of the validated CAD build.' } } } } });
   } catch (error) {
     const message = describeError(error);
     await event(job.id, 'failed', 'orchestrator', 'Build failed before a validated BREP was produced.', undefined, { message });
     await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.FAILED, error: message, finishedAt: new Date() } });
-    if (run) await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.FAILED, steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.FAILED, summary: message, finishedAt: new Date() } } }, subagents: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.FAILED, summary: message } } } } });
+    if (run) await prisma.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.FAILED, error: message, finishedAt: new Date(), steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.FAILED, summary: message, error: message, finishedAt: new Date() } } }, subagents: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.FAILED, summary: message } } } } });
   }
 }
 async function tick() {

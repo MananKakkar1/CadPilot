@@ -15,6 +15,58 @@
   z-index: 4;
 }
 
+.codex-event-stream {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.codex-stream-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.codex-stream-live { color: #15803d; }
+.codex-stream-reconnecting { color: #b45309; }
+
+.codex-event-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-top: 1px solid #f1f5f9;
+  color: #4f46e5;
+}
+
+.codex-event-row div {
+  display: grid;
+  gap: 3px;
+}
+
+.codex-event-row strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.codex-event-row span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.codex-inspector-chili {
+  animation: codex-inspector-in 240ms ease-out both;
+}
+
+@keyframes codex-inspector-in {
+  from { opacity: .72; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 @media (max-width: 820px) {
   .codex-composer {
     position: sticky;
@@ -22,4 +74,12 @@
     right: auto;
     bottom: auto;
   }
+
+  .codex-inspector-chili {
+    min-height: 70svh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .codex-inspector-chili { animation: none; }
 }

@@ -11,7 +11,7 @@ type BridgeMessage =
 
 type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
 
-export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false }: { projectSlug: string | null; parentRevisionId: string | null; embedded?: boolean }) {
+export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, stepText = null }: { projectSlug: string | null; parentRevisionId: string | null; embedded?: boolean; stepText?: string | null }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -31,11 +31,11 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false }:
       if (!data || data.source !== 'chili3d-bridge') return;
 
       if (data.type === 'ready') {
-        const step = window.localStorage.getItem(HANDOFF_TO_CHILI_STEP);
+        const step = stepText ?? window.localStorage.getItem(HANDOFF_TO_CHILI_STEP);
         const name = window.localStorage.getItem(HANDOFF_TO_CHILI_NAME) ?? 'model';
         if (step && iframeRef.current?.contentWindow) {
           iframeRef.current.contentWindow.postMessage({ source: 'agentic-cad', type: 'import-step', step, name }, window.location.origin);
-          window.localStorage.removeItem(HANDOFF_TO_CHILI_STEP);
+          if (!stepText) window.localStorage.removeItem(HANDOFF_TO_CHILI_STEP);
           window.localStorage.removeItem(HANDOFF_TO_CHILI_NAME);
         } else {
           setStatus('ready');
@@ -61,7 +61,10 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false }:
         }
         setStatus('saving');
         try {
-          const response = await fetch(`/api/projects/${projectSlug}/chili-import`, {
+          const savePath = parentRevisionId
+            ? `/api/projects/${projectSlug}/revisions/${parentRevisionId}/viewport-save`
+            : `/api/projects/${projectSlug}/chili-import`;
+          const response = await fetch(savePath, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ step: data.step, parentRevisionId }),
@@ -79,7 +82,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false }:
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [projectSlug, parentRevisionId]);
+  }, [projectSlug, parentRevisionId, stepText]);
 
   const statusMessage: Record<Status, string> = {
     loading: 'Loading the ChiliCAD editor… large WASM bundle, first load can take a moment.',

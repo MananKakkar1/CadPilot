@@ -18,6 +18,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ run
       const rejected = await prisma.$transaction(async (tx) => {
         await tx.approvalRequest.update({ where: { id: approval.id }, data: { status: 'REJECTED', decidedAt: new Date() } });
         await tx.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.CANCELLED, steps: { updateMany: { where: { id: run.steps[0]?.id }, data: { status: AgentStepStatus.CANCELLED, finishedAt: new Date() } } } } });
+        const lastEvent = await tx.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
+        await tx.agentEvent.create({ data: { runId: run.id, sequence: (lastEvent._max.sequence ?? 0) + 1, type: 'approval.resolved', summary: 'Plan rejected by the user.', payload: { decision: 'reject' } } });
         return tx.agentRun.findUnique({ where: { id: run.id }, include: { approvals: true, steps: true } });
       });
       return NextResponse.json({ run: rejected });
@@ -27,6 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ run
       await tx.approvalRequest.update({ where: { id: approval.id }, data: { status: 'APPROVED', decidedAt: new Date() } });
       await tx.agentRun.update({ where: { id: run.id }, data: { buildJobId: job.id, status: AgentRunStatus.QUEUED, steps: { updateMany: { where: { id: run.steps[0]?.id }, data: { status: AgentStepStatus.PENDING } } } } });
       await tx.buildEvent.create({ data: { jobId: job.id, sequence: 1, stage: 'queued', agent: 'orchestrator', summary: 'Approved build queued for the isolated CAD worker.' } });
+      const lastEvent = await tx.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
+      await tx.agentEvent.create({ data: { runId: run.id, sequence: (lastEvent._max.sequence ?? 0) + 1, type: 'approval.resolved', summary: 'Plan approved; build queued.', payload: { decision: 'approve', jobId: job.id } } });
       return { job };
     });
     return NextResponse.json(result, { status: 202 });

@@ -85,6 +85,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     await saveArtifact(revision.id, ArtifactKind.STL, 'model.stl', 'model/stl', new Uint8Array(await shape.blobSTL({ binary: true }).arrayBuffer()));
     await saveArtifact(revision.id, ArtifactKind.PREVIEW_MESH, 'preview.json', 'application/json', JSON.stringify(mesh));
     await saveArtifact(revision.id, ArtifactKind.AUDIT, 'audit.json', 'application/json', JSON.stringify({ metrics, validation }, null, 2));
+    await saveArtifact(revision.id, ArtifactKind.VALIDATION_REPORT, 'validation.json', 'application/json', JSON.stringify({ metrics, validation }, null, 2));
 
     await prisma.chatMessage.create({
       data: {

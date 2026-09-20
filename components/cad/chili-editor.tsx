@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
+import { Dock, DockIcon } from '@/components/magicui/dock';
 import { HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
 
 type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'ready' }
   | { source: 'chili3d-bridge'; type: 'importing' }
   | { source: 'chili3d-bridge'; type: 'import-done' }
+  | { source: 'chili3d-bridge'; type: 'commands'; commands: Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }> }
   | { source: 'chili3d-bridge'; type: 'export-step'; step: string; name?: string };
 
 type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
@@ -19,6 +21,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
   // Starts empty so the first client render matches the server (no window) — set after
   // mount to avoid a hydration mismatch, then used to build the iframe's src.
   const [pluginUrl, setPluginUrl] = useState('');
+  const [commands, setCommands] = useState<Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }>>([]);
 
   useEffect(() => {
     setPluginUrl(`${window.location.origin}/chili3d-bridge/plugins/agentic-cad-bridge/`);
@@ -30,7 +33,13 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
       const data = event.data;
       if (!data || data.source !== 'chili3d-bridge') return;
 
+      if (data.type === 'commands') {
+        setCommands(data.commands.filter((command) => command.isApplicationCommand || /^(application|view|undo|redo|import|export|measure|check)/i.test(command.key)).slice(0, 12));
+        return;
+      }
+
       if (data.type === 'ready') {
+        iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'get-commands' }, window.location.origin);
         const step = stepText ?? window.localStorage.getItem(HANDOFF_TO_CHILI_STEP);
         const name = window.localStorage.getItem(HANDOFF_TO_CHILI_NAME) ?? 'model';
         if (step && iframeRef.current?.contentWindow) {
@@ -129,6 +138,11 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
             <i className="chili-editor-dot chili-editor-dot-busy" />
             {status === 'loading' ? 'Loading ChiliCAD…' : 'Importing model…'}
           </div>
+        )}
+        {status === 'ready' && commands.length > 0 && (
+          <Dock disableMagnification className="chili-command-dock" aria-label="ChiliCAD commands">
+            {commands.map((command) => <DockIcon key={command.key}><button type="button" title={command.helpText ?? command.key} aria-label={command.helpText ?? command.key} onClick={() => iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'execute-command', key: command.key }, window.location.origin)}><span className="chili-command-glyph">{command.key.split('.').pop()?.slice(0, 2).toUpperCase()}</span></button></DockIcon>)}
+          </Dock>
         )}
       </section>
     </div>

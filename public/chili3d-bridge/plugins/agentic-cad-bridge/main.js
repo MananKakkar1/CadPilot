@@ -9,7 +9,7 @@
 //   host -> plugin: { source: "agentic-cad", type: "import-step", step, name }
 //   plugin -> host: { source: "chili3d-bridge", type: "ready" | "importing" | "import-done" | "export-step", step?, name? }
 
-const { command, PubSub, VisualNode } = Chili3dCore;
+const { command, CommandStore, PubSub, VisualNode } = Chili3dCore;
 
 function isEmbedded() {
     return window.parent && window.parent !== window;
@@ -19,6 +19,10 @@ function postToHost(message) {
     if (!isEmbedded()) return false;
     window.parent.postMessage({ source: "chili3d-bridge", ...message }, window.location.origin);
     return true;
+}
+
+function postCommands() {
+    postToHost({ type: "commands", commands: CommandStore.getAllCommands().map(({ key, helpText, isApplicationCommand }) => ({ key, helpText, isApplicationCommand })) });
 }
 
 class SendToReplicadCommand {
@@ -68,9 +72,14 @@ class AgenticCadBridgeService {
             if (data.type === "import-step") {
                 await this.importStep(data.step, data.name);
             }
+            if (data.type === "execute-command" && typeof data.key === "string") {
+                PubSub.default.pub("executeCommand", data.key);
+            }
+            if (data.type === "get-commands") postCommands();
         };
         window.addEventListener("message", this.listener);
         postToHost({ type: "ready" });
+        postCommands();
     }
 
     stop() {

@@ -9,6 +9,7 @@
     "start:prod": "npm run build && next start",
     "cad:worker": "node scripts/cad-agent-worker.mjs",
     "lint": "next lint",
+    "test:responsive": "node scripts/verify-responsive-contract.mjs",
     "gen:replicad-api": "node scripts/gen-replicad-api.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

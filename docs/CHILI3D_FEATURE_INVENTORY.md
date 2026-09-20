@@ -28,3 +28,14 @@ The source audit was performed from the pinned repository, not from the compiled
 - [ ] Save Chili3D exports as derived revisions through a project-scoped viewport-save endpoint.
 - [ ] Add a generated command inventory test so upstream command additions do not silently disappear.
 - [ ] Keep `public/chili3d/CHILI3D_NOTICE.md`, `LICENSE`, pinned commit, and rebuild script synchronized.
+
+## Pinned command inventory
+
+The pinned source exposes the following command families. This list is kept in the repository so Dock/command-palette work can be checked against upstream instead of being inferred from screenshots:
+
+- Application: new/open/save document, import/export, undo, redo, performance test, dynamic workplane.
+- Create: point, line, rectangle, polygon, regular polygon, circle, ellipse, arc variants, Bézier, box, cone, cylinder, sphere, pyramid, helix, offset, section, extrude, revolve, loft, sweep, pipe, thick solid, group, reference segment, copy sub-shape, curve projection.
+- Modify: move, rotate, mirror, array, trim, extend, break, split, shell, sew, simplify, repair, remove feature, remove sub-shapes, explode, brush, paint bucket, fillet, chamfer.
+- Inspection: length, angle, shape check, measure, selection and property inspection.
+
+CadPilot currently exposes project-open, STEP-download, and printer-preparation entry actions in the Magic UI Dock while the complete registry-backed command surface remains inside the embedded Chili3D editor. The next parity step is to expose this inventory as command metadata through the bridge, preserving the upstream command implementations and license boundary.

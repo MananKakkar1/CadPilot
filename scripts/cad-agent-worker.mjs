@@ -6,7 +6,7 @@
  * Generation (system prompt, Wikipedia grounding, model fallback chain, fidelity pass) lives in lib/cad/gemini-generate.mjs;
  * sandboxed execution, multi-part / raw-mesh support and exports live in lib/cad/build-runtime.mjs.
  */
-import { PrismaClient, BuildStatus, ArtifactKind, AgentRunStatus, AgentStepStatus } from '@prisma/client';
+import { PrismaClient, Prisma, BuildStatus, ArtifactKind, AgentRunStatus, AgentStepStatus } from '@prisma/client';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as replicad from 'replicad';
@@ -28,9 +28,17 @@ async function event(jobId, stage, agent, summary, tool, detail) {
   await prisma.buildEvent.create({ data: { jobId, sequence: buildSequence, stage, agent, summary, tool, detail } });
   const run = await prisma.agentRun.findUnique({ where: { buildJobId: jobId }, select: { id: true } });
   if (run) {
-    const lastEvent = await prisma.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
-    const agentSequence = (lastEvent._max.sequence ?? 0) + 1;
-    await prisma.agentEvent.create({ data: { runId: run.id, sequence: agentSequence, type: stage, summary, payload: { agent, tool, detail } } });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const lastEvent = await tx.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
+          await tx.agentEvent.create({ data: { runId: run.id, sequence: (lastEvent._max.sequence ?? 0) + 1, type: stage, summary, payload: { agent, tool, detail } } });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        break;
+      } catch (error) {
+        if (error?.code !== 'P2034' || attempt === 2) throw error;
+      }
+    }
     const status = stage === 'evaluate' ? AgentRunStatus.VALIDATING : stage === 'failed' ? AgentRunStatus.FAILED : AgentRunStatus.EXECUTING;
     await prisma.agentRun.update({ where: { id: run.id }, data: { status, startedAt: { set: new Date() }, steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.RUNNING, agentName: agent, summary, startedAt: new Date() } } } } });
   }

@@ -8,6 +8,7 @@ type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'ready' }
   | { source: 'chili3d-bridge'; type: 'importing' }
   | { source: 'chili3d-bridge'; type: 'import-done' }
+  | { source: 'chili3d-bridge'; type: 'preview-ready' }
   | { source: 'chili3d-bridge'; type: 'commands'; commands: Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }> }
   | { source: 'chili3d-bridge'; type: 'export-step'; step: string; name?: string };
 
@@ -21,6 +22,8 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
   // Starts empty so the first client render matches the server (no window) — set after
   // mount to avoid a hydration mismatch, then used to build the iframe's src.
   const [pluginUrl, setPluginUrl] = useState('');
+  const [preview, setPreview] = useState<unknown>(null);
+  const [bridgeReady, setBridgeReady] = useState(false);
   const [commands, setCommands] = useState<Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }>>([
     { key: 'measure.angle', helpText: 'Measure angle' },
     { key: 'measure.length', helpText: 'Measure length' },
@@ -30,6 +33,15 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
   useEffect(() => {
     setPluginUrl(`${window.location.origin}/chili3d-bridge/plugins/agentic-cad-bridge/`);
   }, []);
+
+  useEffect(() => {
+    if (!projectSlug) return;
+    fetch(`/api/projects/${projectSlug}`, { cache: 'no-store' }).then((response) => response.ok ? response.json() : null).then((data) => {
+      const artifact = data?.project?.revisions?.[0]?.artifacts?.find((item: { kind?: string }) => item.kind === 'PREVIEW_MESH');
+      if (!artifact) return;
+      return fetch(`/api/artifacts/${artifact.id}?inline=1`).then((response) => response.ok ? response.json() : null).then(setPreview);
+    }).catch(() => undefined);
+  }, [projectSlug]);
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent<BridgeMessage>) => {
@@ -43,6 +55,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
       }
 
       if (data.type === 'ready') {
+        setBridgeReady(true);
         iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'get-commands' }, window.location.origin);
         const step = stepText ?? window.localStorage.getItem(HANDOFF_TO_CHILI_STEP);
         const name = window.localStorage.getItem(HANDOFF_TO_CHILI_NAME) ?? 'model';
@@ -63,6 +76,11 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
 
       if (data.type === 'import-done') {
         setStatus('ready');
+        return;
+      }
+
+      if (data.type === 'preview-ready') {
+        setStatus('importing');
         return;
       }
 
@@ -97,7 +115,11 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onSaved, projectSlug, parentRevisionId, stepText]);
+  }, [onSaved, preview, projectSlug, parentRevisionId, stepText]);
+
+  useEffect(() => {
+    if (bridgeReady && preview && iframeRef.current?.contentWindow) iframeRef.current.contentWindow.postMessage({ source: 'agentic-cad', type: 'import-preview', preview }, window.location.origin);
+  }, [bridgeReady, preview]);
 
   const statusMessage: Record<Status, string> = {
     loading: 'Loading the ChiliCAD editor… large WASM bundle, first load can take a moment.',

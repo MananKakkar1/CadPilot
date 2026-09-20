@@ -9,7 +9,7 @@
 //   host -> plugin: { source: "agentic-cad", type: "import-step", step, name }
 //   plugin -> host: { source: "chili3d-bridge", type: "ready" | "importing" | "import-done" | "export-step", step?, name? }
 
-const { command, CommandStore, PubSub, VisualNode } = Chili3dCore;
+const { command, CommandStore, Mesh, MeshNode, PubSub, VisualNode } = Chili3dCore;
 
 function isEmbedded() {
     return window.parent && window.parent !== window;
@@ -72,6 +72,9 @@ class AgenticCadBridgeService {
             if (data.type === "import-step") {
                 await this.importStep(data.step, data.name);
             }
+            if (data.type === "import-preview" && data.preview) {
+                this.importPreview(data.preview);
+            }
             if (data.type === "execute-command" && typeof data.key === "string") {
                 PubSub.default.pub("executeCommand", data.key);
             }
@@ -97,9 +100,30 @@ class AgenticCadBridgeService {
         const document = app.activeView?.document ?? (await app.newDocument(name || "Untitled"));
         const file = new File([step], `${name || "model"}.step`, { type: "application/step" });
         await app.dataExchange.import(document, [file]);
+        const previews = document.modelManager.findNodes((node) => node instanceof MeshNode && node.name === "Agentic CAD preview");
+        if (previews.length) document.rootNode.remove(...previews);
         app.activeView?.cameraController.fitContent();
         PubSub.default.pub("showToast", "agenticCad.received");
         postToHost({ type: "import-done" });
+    }
+
+    importPreview(preview) {
+        const document = this.application.activeView?.document;
+        if (!document || !preview?.parts?.length) return;
+        const position = [];
+        const index = [];
+        let vertexOffset = 0;
+        for (const part of preview.parts) {
+            if (!Array.isArray(part.vertices) || !Array.isArray(part.triangles)) continue;
+            position.push(...part.vertices);
+            index.push(...part.triangles.map((value) => value + vertexOffset));
+            vertexOffset += part.vertices.length / 3;
+        }
+        if (!position.length || !index.length) return;
+        const node = new MeshNode({ document, name: "Agentic CAD preview", mesh: new Mesh({ meshType: "surface", position: new Float32Array(position), index: new Uint32Array(index), color: 0x64748b }) });
+        document.rootNode.add(node);
+        this.application.activeView?.cameraController.fitContent();
+        postToHost({ type: "preview-ready" });
     }
 }
 

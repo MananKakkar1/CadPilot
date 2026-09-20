@@ -50,6 +50,14 @@
   gap: 12px;
 }
 
+.codex-workspace-chili .codex-body {
+  grid-template-columns: 220px minmax(420px, 1fr) minmax(560px, 42vw);
+}
+
+.codex-workspace-chili .codex-inspector-chili {
+  min-width: 0;
+}
+
 .codex-inspector-section h2 {
   margin: 0;
   font-size: 22px;
@@ -167,6 +175,10 @@
 
   .codex-inspector-chili {
     min-height: 70svh;
+  }
+
+  .codex-workspace-chili .codex-body {
+    display: block;
   }
 }
 

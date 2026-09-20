@@ -53,7 +53,7 @@ This checklist audits the supplied workbench specification against the current r
 - [partial] Add blueprint metadata, orthographic/section/hidden-line fidelity, and inline previews; metadata and SVG preview are available, full drawing fidelity remains.
 - [ ] Add native sketch state/constraints metadata.
 - [partial] Expose printer-ready STL/3MF artifacts.
-- [partial] Add print preparation validation, orientation, scale, and report UI; validated STL/3MF downloads and a printer-preparation inspector entry are available, richer preparation controls remain.
+- [partial] Add print preparation validation, orientation, scale, and report UI; the project-scoped print-preflight API now validates BREP, watertightness, mesh, bounds, STL, and 3MF readiness, while richer preparation controls remain.
 - [partial] Add Dock actions wired to real export/validation commands; ChiliCAD open and STEP download are wired, printer preparation opens its inspector workflow.
 
 ## Verification

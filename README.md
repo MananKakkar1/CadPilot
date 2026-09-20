@@ -14,7 +14,7 @@ flowchart LR
   Q --> W[Dedicated CAD worker]
   W --> R[Validated revision]
   R --> A[Artifacts and audit trail]
-  R --> V[Private workspace]
+  R --> V[Codex-style project workbench]
   R --> Pub[Optional public project URL]
 ```
 
@@ -81,7 +81,8 @@ flowchart TB
   Landing --> Pages
   Workspace --> Projects
   Workspace --> Builds
-  Editor --> Projects
+  Workspace --> Chili[Embedded Chili3D renderer]
+  Chili --> Projects
   Pages --> Auth
   Pages --> Projects
   Pages --> Files
@@ -95,6 +96,8 @@ flowchart TB
   Worker -. optional .-> LLM
   Files --> Vol
 ```
+
+The project workbench is the canonical workflow. It keeps the conversation, durable run state, execution timeline, plan/approval state, artifacts, and the embedded Chili3D editor in one route. Build events are streamed over SSE and reconciled into the current page without a reload. The project-page integration passes STEP directly into the embedded Chili3D runtime; the localStorage bridge remains only for the legacy fallback editor.
 
 ### Main code areas
 
@@ -148,8 +151,9 @@ Important invariants:
 | `/projects/:slug` | Private project workspace and build activity |
 | `/p/:slug` | Published project view |
 | `/u/:username` | Public creator profile |
-| `/chili-editor` | ChiliCAD editing surface |
-| `/ai`, `/studio` | Additional CAD studio surfaces |
+| `/chili-editor` | Legacy/debug ChiliCAD editing surface; not the primary workflow |
+| `/ai` | Removed; returns 404 |
+| `/studio` | Redirects to `/projects/new` |
 
 ### API
 
@@ -161,9 +165,14 @@ Important invariants:
 | `/api/projects/:slug` | `GET` | Load an owned project |
 | `/api/projects/:slug/builds` | `POST` | Queue a build and persist the user prompt |
 | `/api/builds/:jobId/events` | `GET` | Stream persisted build events over Server-Sent Events |
+| `/api/runs/:runId` | `GET` | Load a durable agent-run snapshot |
+| `/api/runs/:runId/events` | `GET` | Replay and stream ordered generic agent events |
+| `/api/runs/:runId/cancel` | `POST` | Cancel a queued or running run |
+| `/api/runs/:runId/retry` | `POST` | Retry a failed or cancelled run |
 | `/api/projects/:slug/publish` | `POST` | Publish a valid revision |
 | `/api/artifacts/:id` | `GET` | Download an authorized artifact |
 | `/api/projects/:slug/chili-import` | `POST` | Save a ChiliCAD edit as a new revision |
+| `/api/projects/:slug/revisions/:revisionId/viewport-save` | `POST` | Save an embedded Chili3D edit as a derived revision |
 | `/api/profile` | `GET`, `PUT` | Read and update the current profile |
 | `/api/generate-cad` | `POST` | Direct generation endpoint retained for the non-project CAD flow |
 
@@ -246,11 +255,13 @@ This section records the state observed during the repository audit on 2026-09-2
 ### Follow-up risks
 
 - Password-reset codes are currently logged to the server console; an email provider still needs to be integrated before production use.
-- The SSE handler uses a polling interval and should clear that interval when the client disconnects to avoid retaining work after abandoned requests.
+- The SSE handlers use short polling intervals over durable event rows. They should add abort-signal cleanup and heartbeat frames before high-volume production deployment.
 - Build-event sequence numbers are calculated from a count. If multiple worker processes are deployed, concurrent writers can collide; use an atomic sequence strategy or a database-generated ordering key before horizontal scaling.
 - `CAD_ARTIFACT_DIR` is local/shared-disk storage today. Production needs durable object storage or a carefully managed shared volume, plus retention and cleanup policies.
 - `next lint` is declared in `package.json`, but this checkout did not have `node_modules` installed during the audit, so lint and type/build checks could not be executed here. Install dependencies and run the commands below in CI.
-- The embedded Chili3D distribution is vendored under `public/chili3d`; upgrades should be pinned, reviewed, and rebuilt with `scripts/build-chili3d.mjs`.
+- The embedded Chili3D distribution is vendored under `public/chili3d`; upgrades should be pinned, reviewed, and rebuilt with `scripts/build-chili3d.mjs`. The source feature inventory and remaining parity work are tracked in `docs/CHILI3D_FEATURE_INVENTORY.md`.
+
+The complete milestone audit and implementation checklist is tracked in `docs/AGENTIC_CAD_WORKBENCH_CHECKLIST.md`.
 
 Recommended CI gates:
 

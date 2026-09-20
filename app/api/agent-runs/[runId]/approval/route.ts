@@ -31,7 +31,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ run
       await tx.buildEvent.create({ data: { jobId: job.id, sequence: 1, stage: 'queued', agent: 'orchestrator', summary: 'Approved build queued for the isolated CAD worker.' } });
       const lastEvent = await tx.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
       await tx.agentEvent.create({ data: { runId: run.id, sequence: (lastEvent._max.sequence ?? 0) + 1, type: 'approval.resolved', summary: 'Plan approved; build queued.', payload: { decision: 'approve', jobId: job.id } } });
-      return { job };
+      const updatedRun = await tx.agentRun.findUnique({ where: { id: run.id } });
+      return { job, run: updatedRun };
     });
     return NextResponse.json(result, { status: 202 });
   } catch (error) {

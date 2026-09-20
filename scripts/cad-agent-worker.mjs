@@ -24,11 +24,13 @@ async function initCad() { if (!initialized) { replicad.setOC(await openCascade(
 
 async function event(jobId, stage, agent, summary, tool, detail) {
   const count = await prisma.buildEvent.count({ where: { jobId } });
-  const sequence = count + 1;
-  await prisma.buildEvent.create({ data: { jobId, sequence, stage, agent, summary, tool, detail } });
+  const buildSequence = count + 1;
+  await prisma.buildEvent.create({ data: { jobId, sequence: buildSequence, stage, agent, summary, tool, detail } });
   const run = await prisma.agentRun.findUnique({ where: { buildJobId: jobId }, select: { id: true } });
   if (run) {
-    await prisma.agentEvent.create({ data: { runId: run.id, sequence, type: stage, summary, payload: { agent, tool, detail } } });
+    const lastEvent = await prisma.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
+    const agentSequence = (lastEvent._max.sequence ?? 0) + 1;
+    await prisma.agentEvent.create({ data: { runId: run.id, sequence: agentSequence, type: stage, summary, payload: { agent, tool, detail } } });
     const status = stage === 'evaluate' ? AgentRunStatus.VALIDATING : stage === 'failed' ? AgentRunStatus.FAILED : AgentRunStatus.EXECUTING;
     await prisma.agentRun.update({ where: { id: run.id }, data: { status, startedAt: { set: new Date() }, steps: { updateMany: { where: { status: { in: [AgentStepStatus.PENDING, AgentStepStatus.RUNNING] } }, data: { status: AgentStepStatus.RUNNING, agentName: agent, summary, startedAt: new Date() } } } } });
   }
@@ -153,6 +155,11 @@ async function processJob(job) {
     await saveArtifact(revision.id, ArtifactKind.VALIDATION_REPORT, 'validation.json', 'application/json', JSON.stringify({ metrics, validation }, null, 2));
     await saveArtifact(revision.id, ArtifactKind.AUDIT, 'audit.json', 'application/json', JSON.stringify({ intent, plan, metrics, validation, parts: result.parts.map(({ name, color, volume, surfaceArea }) => ({ name, color, volume: Math.round(volume), surfaceArea: Math.round(surfaceArea) })), generation: generation && { model: generation.model, passes: generation.passes, references: generation.references } }, null, 2));
     await saveArtifact(revision.id, ArtifactKind.AGENT_REPORT, 'agent-report.md', 'text/markdown', engineeringReport(nextNumber, intent, plan, metrics, validation, generation));
+    if (run) {
+      const artifacts = await prisma.artifact.findMany({ where: { revisionId: revision.id }, select: { id: true, kind: true, mimeType: true } });
+      await prisma.agentOutput.createMany({ data: artifacts.map((artifact) => ({ runId: run.id, artifactId: artifact.id, kind: artifact.kind.toLowerCase(), mimeType: artifact.mimeType })) });
+      await event(job.id, 'output', 'artifact generator', `Attached ${artifacts.length} durable outputs to the agent run.`, 'artifact-store', { artifactCount: artifacts.length });
+    }
     await prisma.chatMessage.create({ data: { conversation: { connectOrCreate: { where: { projectId: job.projectId }, create: { projectId: job.projectId } } }, role: 'assistant', content: engineeringReport(nextNumber, intent, plan, metrics, validation, generation), revisionId: revision.id } });
     await event(job.id, 'evaluate', 'BREP evaluator', 'Validated the model and generated STEP, STL, preview, and audit files.', 'OpenCascade', { metrics, validation });
     await prisma.buildJob.update({ where: { id: job.id }, data: { status: BuildStatus.SUCCEEDED, revisionId: revision.id, finishedAt: new Date() } });

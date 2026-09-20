@@ -17,20 +17,20 @@ This checklist audits the supplied workbench specification against the current r
 - [x] Stream ordered build events to the browser without a page reload.
 - [x] Add generic run snapshot/events/cancel/retry endpoints.
 - [ ] Add atomic event sequence allocation for concurrent writers.
-- [ ] Add durable run cancellation and retry semantics.
+- [x] Add durable run cancellation and retry semantics.
 - [partial] Show plan mode and approval state in the project workspace.
 - [x] Record approval decisions as generic agent events.
-- [partial] Show bounded subagent status.
-- [ ] Add inspect/cancel/follow-up controls for subagents.
-- [ ] Add output records for every generated artifact and inline output block.
+- [x] Show bounded subagent status.
+- [partial] Add inspect/cancel/follow-up controls for subagents; run-scoped cancellation is implemented, follow-up UI remains.
+- [x] Add durable output records for generated CAD artifacts and a run outputs endpoint.
 
 ## Project workbench
 
 - [x] Three-region Codex-style layout: project rail, conversation, inspector.
-- [partial] Live execution timeline with status markers and tool labels.
-- [ ] Run inspector tabs: Run, Plan, Viewport, Files, Agents.
+- [x] Live execution timeline with status markers and tool labels.
+- [x] Run inspector tabs: Run, Plan, Viewport, Files, Agents.
 - [ ] Mobile rail drawer and inspector sheet behavior.
-- [ ] Run cancel/retry controls.
+- [x] Run cancel/retry controls.
 - [ ] Inline Markdown, Mermaid, LaTeX, code, and file output rendering.
 - [ ] Truthful viewport/import/save markers shared with the run state.
 
@@ -61,7 +61,7 @@ This checklist audits the supplied workbench specification against the current r
 - [x] Production typecheck/build passes at the last verified commit.
 - [partial] Browser verification covers the project route, starter prompt, and workspace empty state.
 - [x] Browser verification covers live event updates without reload.
-- [ ] Browser verification covers Chili3D import, edit, and derived revision save.
+- [partial] Browser verification covers the actual pinned Chili3D renderer; authorized project import/edit/save remains to verify with a generated revision.
 - [ ] Add automated tests for transitions, approvals, event replay, artifacts, and permissions.
 - [ ] Add Chili3D feature parity inventory and tracked acceptance tests.
 

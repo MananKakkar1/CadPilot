@@ -167,8 +167,10 @@ Important invariants:
 | `/api/builds/:jobId/events` | `GET` | Stream persisted build events over Server-Sent Events |
 | `/api/runs/:runId` | `GET` | Load a durable agent-run snapshot |
 | `/api/runs/:runId/events` | `GET` | Replay and stream ordered generic agent events |
+| `/api/runs/:runId/outputs` | `GET` | Load durable outputs and artifact references for a run |
 | `/api/runs/:runId/cancel` | `POST` | Cancel a queued or running run |
 | `/api/runs/:runId/retry` | `POST` | Retry a failed or cancelled run |
+| `/api/runs/:runId/subagents/:subagentId/cancel` | `POST` | Cancel an active bounded subagent |
 | `/api/projects/:slug/publish` | `POST` | Publish a valid revision |
 | `/api/artifacts/:id` | `GET` | Download an authorized artifact |
 | `/api/projects/:slug/chili-import` | `POST` | Save a ChiliCAD edit as a new revision |

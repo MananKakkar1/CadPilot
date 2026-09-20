@@ -15,6 +15,85 @@
   z-index: 4;
 }
 
+.codex-inspector-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  margin: -4px -4px 18px;
+  padding: 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.codex-inspector-tabs button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 8px 4px;
+}
+
+.codex-inspector-tabs button:hover,
+.codex-inspector-tabs button.active {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.codex-inspector-tabs button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 1px;
+}
+
+.codex-inspector-section {
+  display: grid;
+  gap: 12px;
+}
+
+.codex-inspector-section h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -.04em;
+  text-transform: capitalize;
+}
+
+.codex-approval-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.codex-subagents {
+  display: grid;
+  gap: 7px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.codex-subagent {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.codex-subagent > div {
+  display: grid;
+  gap: 3px;
+}
+
+.codex-subagent strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.codex-subagent span:last-child {
+  color: #64748b;
+  font-size: 11px;
+}
+
 .codex-event-stream {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -27,6 +106,17 @@
   align-items: center;
   gap: 6px;
   color: #64748b;
+  font-size: 11px;
+}
+
+.codex-run-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.codex-run-actions [data-slot=button] {
+  height: 30px;
+  padding: 0 10px;
   font-size: 11px;
 }
 

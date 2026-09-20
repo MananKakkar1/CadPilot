@@ -3,11 +3,18 @@ import { meshHelpers, measureRawMesh, validateRawMesh, findDisconnectedParts, ty
 export type AiCadMesh = { vertices: number[]; triangles: number[]; normals: number[] };
 export type AiCadPart = { mesh: AiCadMesh; name: string; color: string; volume: number; surfaceArea: number };
 export type AiCadResult = { parts: AiCadPart[]; metrics: { volume: number; surfaceArea: number } };
-type WorkerRequest = { id: number; code: string };
+type WorkerRequest =
+  | { id: number; type?: 'run'; code: string }
+  | { id: number; type: 'import-step'; step: string }
+  | { id: number; type: 'export-step' };
 type WorkerResponse =
   | { id: number; type: 'progress'; part: AiCadPart; index: number; total: number }
   | { id: number; type: 'done'; result: AiCadResult }
   | { id: number; type: 'error'; error: string };
+
+type HandoffResponse =
+  | { id: number; type: 'step-exported'; step: string }
+  | { id: number; type: 'step-error'; error: string };
 
 const DEFAULT_PALETTE = ['#e56e46', '#4f8fd6', '#6bbf7d', '#d6c34f', '#a76bd6', '#d64f8f', '#4fd6c3', '#d68f4f'];
 const MAX_PARTS = 160;
@@ -70,6 +77,7 @@ function pickMeshOptions(parts: Array<{ shape?: unknown; rawMesh?: RawMesh }>) {
 }
 
 type RawPart = { shape?: unknown; rawMesh?: RawMesh; name?: string; color?: string };
+let lastParts: RawPart[] = [];
 
 function isSolidLike(value: unknown): value is { mesh: (options: unknown) => unknown } {
   return !!value && typeof (value as { mesh?: unknown }).mesh === 'function';
@@ -98,18 +106,21 @@ function normalizeParts(returned: unknown): RawPart[] {
   });
 }
 
-async function runGeneratedCode(id: number, code: string) {
+async function runGeneratedCode(id: number, code: string, providedParts?: RawPart[]) {
   const replicad = await loadReplicad();
-  // Pre-destructure every replicad export into scope, so generated code that uses a
-  // function without explicitly destructuring it (a common small model mistake) still works.
-  const exportNames = Object.keys(replicad).filter((name) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name));
-  const helperNames = Object.keys(meshHelpers).filter((name) => !exportNames.includes(name));
-  const preamble = `const { ${exportNames.join(', ')} } = replicad;\nconst { ${helperNames.join(', ')} } = helpers;`;
-  const factory = new Function('replicad', 'helpers', `"use strict";\n${preamble}\n${code}\nreturn main(replicad, helpers);`);
-  // One merged object serves as both arguments, so a helper destructured from `replicad` (or an export from
-  // `helpers`) still resolves instead of becoming undefined and shadowing the in-scope global.
-  const api = { ...replicad, ...meshHelpers };
-  const parts = normalizeParts(factory(api, api));
+  let parts: RawPart[];
+  if (providedParts) {
+    parts = providedParts;
+  } else {
+    // Pre-destructure every replicad export and mesh helper so generated code can use either API directly.
+    const exportNames = Object.keys(replicad).filter((name) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name));
+    const helperNames = Object.keys(meshHelpers).filter((name) => !exportNames.includes(name));
+    const preamble = `const { ${exportNames.join(', ')} } = replicad;\nconst { ${helperNames.join(', ')} } = helpers;`;
+    const factory = new Function('replicad', 'helpers', `"use strict";\n${preamble}\n${code}\nreturn main(replicad, helpers);`);
+    const api = { ...replicad, ...meshHelpers };
+    parts = normalizeParts(factory(api, api));
+  }
+  lastParts = parts;
   const meshOptions = pickMeshOptions(parts);
 
   let totalVolume = 0;
@@ -162,9 +173,28 @@ async function runGeneratedCode(id: number, code: string) {
   } satisfies AiCadResult;
 }
 
+async function importStep(step: string) {
+  const replicad = await loadReplicad();
+  const shape = await replicad.importSTEP(new Blob([step], { type: 'application/step' }));
+  return [{ shape, name: 'Imported from ChiliCAD' }] satisfies RawPart[];
+}
+
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
+  if (data.type === 'export-step') {
+    try {
+      if (lastParts.length === 0) throw new Error('Nothing to export yet — generate or import a model first.');
+      const replicad = await loadReplicad();
+      const blob = replicad.exportSTEP(lastParts.filter((part) => part.shape).map((part) => ({ shape: part.shape, name: part.name, color: part.color })) as never);
+      self.postMessage({ id: data.id, type: 'step-exported', step: await blob.text() } satisfies HandoffResponse);
+    } catch (error) {
+      self.postMessage({ id: data.id, type: 'step-error', error: error instanceof Error ? error.message : String(error) } satisfies HandoffResponse);
+    }
+    return;
+  }
   try {
-    const result = await runGeneratedCode(data.id, data.code);
+    const result = data.type === 'import-step'
+      ? await runGeneratedCode(data.id, '', await importStep(data.step))
+      : await runGeneratedCode(data.id, data.code);
     self.postMessage({ id: data.id, type: 'done', result } satisfies WorkerResponse);
   } catch (error) {
     self.postMessage({ id: data.id, type: 'error', error: error instanceof Error ? error.message : String(error) } satisfies WorkerResponse);

@@ -7,8 +7,11 @@ import './magic-overrides.css';
 import './reference.css';
 import './chili-editor.css';
 import './agent-workspace.css';
+import './project-viewport.css';
+import './project-workspace.css';
 import './auth.css';
 import 'katex/dist/katex.min.css';
+import './chili-editor.css';
 
 export const metadata: Metadata = {
   title: 'Agentic CAD — Design by intent',

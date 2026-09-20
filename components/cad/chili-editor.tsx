@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/magicui/button';
-import { HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
+import { HANDOFF_FROM_CHILI_NAME, HANDOFF_FROM_CHILI_STEP, HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
 
 type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'ready' }
@@ -9,13 +9,11 @@ type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'import-done' }
   | { source: 'chili3d-bridge'; type: 'export-step'; step: string; name?: string };
 
-type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
+type Status = 'loading' | 'importing' | 'ready' | 'captured';
 
-export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: string | null; parentRevisionId: string | null }) {
+export function ChiliEditor() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<Status>('loading');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [savedRevisionNumber, setSavedRevisionNumber] = useState<number | null>(null);
   // Starts empty so the first client render matches the server (no window) — set after
   // mount to avoid a hydration mismatch, then used to build the iframe's src.
   const [pluginUrl, setPluginUrl] = useState('');
@@ -25,7 +23,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: st
   }, []);
 
   useEffect(() => {
-    const handleMessage = async (event: MessageEvent<BridgeMessage>) => {
+    const handleMessage = (event: MessageEvent<BridgeMessage>) => {
       if (event.origin !== window.location.origin) return;
       const data = event.data;
       if (!data || data.source !== 'chili3d-bridge') return;
@@ -54,62 +52,43 @@ export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: st
       }
 
       if (data.type === 'export-step') {
-        if (!projectSlug) {
-          setStatus('error');
-          setErrorMessage('This editor was opened without a project to save back to.');
-          return;
-        }
-        setStatus('saving');
-        try {
-          const response = await fetch(`/api/projects/${projectSlug}/chili-import`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ step: data.step, parentRevisionId }),
-          });
-          const body = await response.json();
-          if (!response.ok) throw new Error(body.error ?? 'Could not save this revision.');
-          setSavedRevisionNumber(body.revision.revisionNumber);
-          setStatus('saved');
-        } catch (error) {
-          setStatus('error');
-          setErrorMessage(error instanceof Error ? error.message : String(error));
-        }
+        window.localStorage.setItem(HANDOFF_FROM_CHILI_STEP, data.step);
+        window.localStorage.setItem(HANDOFF_FROM_CHILI_NAME, data.name ?? 'model-from-chilicad');
+        setStatus('captured');
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [projectSlug, parentRevisionId]);
+  }, []);
 
   const statusMessage: Record<Status, string> = {
     loading: 'Loading the ChiliCAD editor… large WASM bundle, first load can take a moment.',
     importing: 'Importing your model into ChiliCAD… detailed geometry (threads, fillets) can take a while to parse.',
-    ready: 'Ready. Edit the model, then use the Agentic CAD tab to save it back to this project.',
-    saving: 'Saving your edit as a new revision…',
-    saved: `Saved as revision ${savedRevisionNumber}.`,
-    error: errorMessage || 'Something went wrong.',
+    ready: 'Ready. Edit the model, then use the Agentic CAD tab to send it back.',
+    captured: 'Model captured from ChiliCAD.',
   };
 
   return (
-    <div className="chili-editor-grid">
-      <aside className="chili-editor-panel">
-        <p className="chili-editor-eyebrow">CHILICAD EDITOR</p>
-        <h1>Full parametric<br />editing, live.</h1>
-        <p className="chili-editor-lede">
+    <div className="ai-cad-studio">
+      <aside className="ai-cad-panel">
+        <p className="section-kicker">CHILICAD EDITOR</p>
+        <h1>Full parametric<br /><em>editing, live.</em></h1>
+        <p className="lede">
           The model was handed off as STEP into ChiliCAD, a browser-based parametric CAD editor. Edit the
-          sketch, features, or history directly, then send it back to save it as a new revision.
+          sketch, features, or history directly, then send it back when you&apos;re done.
         </p>
-        <div className={`chili-editor-status chili-editor-status-${status}`}>
-          <i className={`chili-editor-dot ${status === 'loading' || status === 'importing' || status === 'saving' ? 'chili-editor-dot-busy' : ''}`} />
+        <div className="ai-cad-status">
+          <i className={`status-dot ${status === 'loading' || status === 'importing' ? 'status-dot-busy' : ''}`} />
           {statusMessage[status]}
         </div>
-        {status === 'saved' && projectSlug && (
-          <Button onClick={() => { window.location.href = `/projects/${projectSlug}`; }}>
-            Back to project <span>→</span>
+        {status === 'captured' && (
+          <Button onClick={() => { window.location.href = '/ai?fromChili=1'; }}>
+            Open in AI CAD Studio <span>→</span>
           </Button>
         )}
       </aside>
-      <section className="chili-editor-viewport" aria-label="ChiliCAD editor">
+      <section className="ai-cad-viewport" aria-label="ChiliCAD editor">
         {pluginUrl && (
           <iframe
             ref={iframeRef}
@@ -121,7 +100,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId }: { projectSlug: st
         )}
         {(status === 'loading' || status === 'importing') && (
           <div className="chili-editor-loading">
-            <i className="chili-editor-dot chili-editor-dot-busy" />
+            <i className="status-dot status-dot-busy" />
             {status === 'loading' ? 'Loading ChiliCAD…' : 'Importing model…'}
           </div>
         )}

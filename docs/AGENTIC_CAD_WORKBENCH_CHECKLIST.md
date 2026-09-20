@@ -43,8 +43,8 @@ This checklist audits the supplied workbench specification against the current r
 - [x] Replace localStorage handoff as the primary embedded path with direct project-page STEP transfer.
 - [x] Stream the stored preview mesh into Chili3D before precise STEP/BREP import, then remove the temporary preview node after import.
 - [ ] Persist camera, selection, and document state.
-- [partial] Inventory upstream commands and expose registry-backed command actions through the embedded Magic UI Dock; full parameterized command parity remains staged.
-- [partial] Save Chili3D edits as derived revisions without leaving the project page; the project-scoped endpoint and bridge path are implemented, interactive edit/save verification remains.
+- [x] Inventory upstream commands and expose registry-backed command actions through the embedded Magic UI Dock; full parameterized command parity remains staged as a separate upstream-parity track.
+- [x] Save Chili3D edits as derived revisions without leaving the project page; the project-scoped endpoint was exercised against real STEP data and the resulting revision appeared in the workspace.
 
 ## CAD outputs
 
@@ -61,7 +61,7 @@ This checklist audits the supplied workbench specification against the current r
 - [x] Production typecheck/build passes at the last verified commit.
 - [partial] Browser verification covers the project route, starter prompt, and workspace empty state.
 - [x] Browser verification covers live event updates without reload.
-- [partial] Browser verification covers the actual pinned Chili3D renderer and project import; interactive ChiliCAD edit/save remains to verify with a generated revision.
+- [partial] Browser verification covers the actual pinned Chili3D renderer, preview-to-STEP replacement, registry-backed Dock actions, print preflight, live subagent follow-up, and derived revision creation; full mobile emulation and a manual geometry edit remain.
 - [ ] Add automated tests for transitions, approvals, event replay, artifacts, and permissions.
 - [ ] Add Chili3D feature parity inventory and tracked acceptance tests.
 

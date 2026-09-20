@@ -25,7 +25,7 @@ The source audit was performed from the pinned repository, not from the compiled
 - [ ] Stream preview mesh into the viewport before STEP import.
 - [ ] Expose command metadata from the pinned Chili3D command registry to the Magic UI Dock.
 - [ ] Forward camera, selection, document-ready, import, export, and save events to the agent run stream.
-- [ ] Save Chili3D exports as derived revisions through a project-scoped viewport-save endpoint.
+- [x] Save Chili3D exports as derived revisions through a project-scoped viewport-save endpoint; live STEP export data produced revisions 2 and 3 in the project workspace.
 - [ ] Add a generated command inventory test so upstream command additions do not silently disappear.
 - [ ] Keep `public/chili3d/CHILI3D_NOTICE.md`, `LICENSE`, pinned commit, and rebuild script synchronized.
 

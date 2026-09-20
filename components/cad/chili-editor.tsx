@@ -21,7 +21,11 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
   // Starts empty so the first client render matches the server (no window) — set after
   // mount to avoid a hydration mismatch, then used to build the iframe's src.
   const [pluginUrl, setPluginUrl] = useState('');
-  const [commands, setCommands] = useState<Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }>>([]);
+  const [commands, setCommands] = useState<Array<{ key: string; helpText?: string; isApplicationCommand?: boolean }>>([
+    { key: 'measure.angle', helpText: 'Measure angle' },
+    { key: 'measure.length', helpText: 'Measure length' },
+    { key: 'measure.select', helpText: 'Inspect selection' },
+  ]);
 
   useEffect(() => {
     setPluginUrl(`${window.location.origin}/chili3d-bridge/plugins/agentic-cad-bridge/`);
@@ -139,7 +143,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
             {status === 'loading' ? 'Loading ChiliCAD…' : 'Importing model…'}
           </div>
         )}
-        {status === 'ready' && commands.length > 0 && (
+        {pluginUrl && commands.length > 0 && (
           <Dock disableMagnification className="chili-command-dock" aria-label="ChiliCAD commands">
             {commands.map((command) => <DockIcon key={command.key}><button type="button" title={command.helpText ?? command.key} aria-label={command.helpText ?? command.key} onClick={() => iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'execute-command', key: command.key }, window.location.origin)}><span className="chili-command-glyph">{command.key.split('.').pop()?.slice(0, 2).toUpperCase()}</span></button></DockIcon>)}
           </Dock>

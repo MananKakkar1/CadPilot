@@ -11,7 +11,7 @@ type BridgeMessage =
 
 type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
 
-export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, stepText = null }: { projectSlug: string | null; parentRevisionId: string | null; embedded?: boolean; stepText?: string | null }) {
+export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, stepText = null, onSaved }: { projectSlug: string | null; parentRevisionId: string | null; embedded?: boolean; stepText?: string | null; onSaved?: () => void | Promise<void> }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -73,6 +73,8 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
           if (!response.ok) throw new Error(body.error ?? 'Could not save this revision.');
           setSavedRevisionNumber(body.revision.revisionNumber);
           setStatus('saved');
+          await onSaved?.();
+          window.dispatchEvent(new CustomEvent('cadpilot:revision-saved', { detail: body.revision }));
         } catch (error) {
           setStatus('error');
           setErrorMessage(error instanceof Error ? error.message : String(error));
@@ -82,7 +84,7 @@ export function ChiliEditor({ projectSlug, parentRevisionId, embedded = false, s
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [projectSlug, parentRevisionId, stepText]);
+  }, [onSaved, projectSlug, parentRevisionId, stepText]);
 
   const statusMessage: Record<Status, string> = {
     loading: 'Loading the ChiliCAD editor… large WASM bundle, first load can take a moment.',

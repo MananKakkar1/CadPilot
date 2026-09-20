@@ -91,6 +91,12 @@ export function ProjectWorkspace({ initialProject }: { initialProject: Project }
     return () => stream.close();
   }, [activeRunId, busy, project.slug]);
 
+  useEffect(() => {
+    const handleRevisionSaved = () => { refreshProject(); };
+    window.addEventListener('cadpilot:revision-saved', handleRevisionSaved);
+    return () => window.removeEventListener('cadpilot:revision-saved', handleRevisionSaved);
+  }, [project.slug]);
+
   const build = async () => {
     if (!prompt.trim()) return;
     if (planMode) {

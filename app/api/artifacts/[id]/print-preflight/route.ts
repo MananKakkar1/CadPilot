@@ -14,7 +14,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   const hasThreeMf = revision.artifacts.some((item) => item.kind === 'THREE_MF');
   const checks = [
     { id: 'valid-brep', label: 'Validated solid', passed: revision.isValid && validation.valid !== false, detail: 'The revision passed deterministic geometry validation.' },
-    { id: 'watertight', label: 'Watertight source', passed: revision.isValid && (metrics.volume ?? 0) > 0, detail: 'A measurable closed solid is required before slicing.' },
+    { id: 'watertight', label: 'Valid geometry, non-zero volume', passed: revision.isValid && (metrics.volume ?? 0) > 0, detail: 'The source passed geometry validation and reports a measurable volume. This does not yet confirm manifold/watertight topology (no self-intersection or hole check is performed); a positive result here is not a guarantee of print-safety.' },
     { id: 'mesh', label: 'Mesh available', passed: hasStl && (metrics.triangleCount ?? 0) > 0, detail: hasStl ? `${(metrics.triangleCount ?? 0).toLocaleString()} triangles recorded.` : 'STL derivative is missing.' },
     { id: 'package', label: '3MF package available', passed: hasThreeMf, detail: hasThreeMf ? '3MF export is available.' : '3MF derivative is missing.' },
   ];

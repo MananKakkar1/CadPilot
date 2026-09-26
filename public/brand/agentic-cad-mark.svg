@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">Agentic CAD mark</title>
+  <title id="title">CadPilot mark</title>
   <g fill="none" stroke="#eee8dc" stroke-linecap="round" stroke-linejoin="round">
     <path d="M18 23a20 20 0 0 1 28 0M18 41a20 20 0 0 0 28 0" stroke-width="1.5" opacity=".42"/>
     <path d="M32 27V15M32 37v12M27 32H15M37 32h12" stroke-width="2" opacity=".92"/>

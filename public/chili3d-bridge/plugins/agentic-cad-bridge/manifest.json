@@ -1,10 +1,10 @@
 {
     "name": "agentic-cad-bridge",
     "version": "1.0.0",
-    "description": "Round-trips the current model between the Agentic CAD workspace (replicad) and this Chili3D editor.",
+    "description": "Round-trips the current model between the CadPilot workspace (replicad) and this Chili3D editor.",
     "main": "main.js",
     "author": {
-        "name": "Agentic CAD"
+        "name": "CadPilot"
     },
     "engines": {
         "chili3d": ">=0.7"

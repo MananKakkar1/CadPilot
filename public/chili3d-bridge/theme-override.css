@@ -1,5 +1,5 @@
 /*
-  Re-skins the vendored Chili3D build (see /public/chili3d) to match the Agentic CAD project
+  Re-skins the vendored Chili3D build (see /public/chili3d) to match the CadPilot project
   workspace's light, indigo/cyan palette (app/agent-workspace.css: #4f46e5 / #06b6d4 / #f8fbff),
   so the editor doesn't feel like a foreign app dropped into an iframe. Chili3D themes itself
   through CSS custom properties scoped to :root[theme="light"|"dark"]; both are pointed at the

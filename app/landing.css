@@ -13,3 +13,4 @@
   [data-slot="button"] { transition: color 140ms ease-out, background-color 140ms ease-out; }
   [data-slot="button"]:active { transform: none; }
 }
+.demo-export-note{color:var(--muted);font:10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}

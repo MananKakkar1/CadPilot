@@ -1,6 +1,6 @@
 {
-  "name": "Agentic CAD",
-  "short_name": "Agentic CAD",
+  "name": "CadPilot",
+  "short_name": "CadPilot",
   "description": "Design parts by intent with editable Replicad geometry.",
   "start_url": "/",
   "display": "standalone",

@@ -14,7 +14,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ slug: str
   const bounds = metrics.bounds?.min && metrics.bounds.max ? metrics.bounds.max.map((value, index) => Math.abs(value - (metrics.bounds?.min?.[index] ?? value))) : [];
   const checks = [
     { id: 'valid-brep', label: 'Validated solid', passed: revision.isValid && validation.valid !== false, detail: 'The source revision passed deterministic geometry validation.' },
-    { id: 'watertight', label: 'Watertight source', passed: revision.isValid && (metrics.volume ?? 0) > 0, detail: 'A measurable closed solid is required before slicing.' },
+    { id: 'watertight', label: 'Valid geometry, non-zero volume', passed: revision.isValid && (metrics.volume ?? 0) > 0, detail: 'The source passed geometry validation and reports a measurable volume. This does not yet confirm manifold/watertight topology (no self-intersection or hole check is performed); a positive result here is not a guarantee of print-safety.' },
     { id: 'mesh', label: 'Mesh available', passed: hasStl && (metrics.triangleCount ?? 0) > 0, detail: hasStl ? `${(metrics.triangleCount ?? 0).toLocaleString()} triangles recorded.` : 'Generate an STL derivative before printing.' },
     { id: 'package', label: '3MF package available', passed: hasThreeMf, detail: hasThreeMf ? '3MF export is available for printer workflows.' : 'Generate a 3MF derivative for metadata-aware printers.' },
   ];

@@ -243,30 +243,27 @@ button.wk-chip:hover { color: var(--w-ink); background: var(--w-surface-3); }
 .wk-list li { font-size: 12px; line-height: 1.5; color: var(--w-ink-2); }
 .wk-list-warn li { color: var(--w-warn); }
 
-.wk-alert {
+/* Unified "flag something to the user" system — one set of info/warn/bad treatments any
+   card can use, replacing the old separate .wk-alert (danger-only) and .wk-note/-warn
+   (info/warn, no danger variant). Old classes kept as aliases below for call sites not
+   migrated in this pass. */
+.wk-flag {
   display: flex;
   align-items: flex-start;
   gap: var(--w-2);
   padding: 10px var(--w-3);
   border-radius: var(--w-r);
-  background: var(--w-danger-bg);
-  box-shadow: 0 0 0 1px rgba(198, 40, 40, .2);
-  color: var(--w-danger);
   font-size: 12.5px;
   line-height: 1.5;
 }
+.wk-flag > svg { flex: none; margin-top: 1px; }
+.wk-flag-info { background: var(--w-surface-2); box-shadow: var(--w-hairline); color: var(--w-ink-2); }
+.wk-flag-warn { background: var(--w-warn-bg); color: var(--w-ink-2); }
+.wk-flag-warn .wk-label { color: var(--w-warn); }
+.wk-flag-bad { background: var(--w-danger-bg); box-shadow: 0 0 0 1px rgba(198, 40, 40, .2); color: var(--w-danger); }
+.wk-alert { display: flex; align-items: flex-start; gap: var(--w-2); padding: 10px var(--w-3); border-radius: var(--w-r); background: var(--w-danger-bg); box-shadow: 0 0 0 1px rgba(198, 40, 40, .2); color: var(--w-danger); font-size: 12.5px; line-height: 1.5; }
 .wk-alert svg { flex: none; margin-top: 1px; }
-.wk-note {
-  display: grid;
-  gap: 4px;
-  padding: 10px var(--w-3);
-  border-radius: var(--w-r);
-  background: var(--w-surface-2);
-  box-shadow: var(--w-hairline);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--w-ink-2);
-}
+.wk-note { display: grid; gap: 4px; padding: 10px var(--w-3); border-radius: var(--w-r); background: var(--w-surface-2); box-shadow: var(--w-hairline); font-size: 12.5px; line-height: 1.5; color: var(--w-ink-2); }
 .wk-note-warn { background: var(--w-warn-bg); }
 .wk-note-warn .wk-label { color: var(--w-warn); }
 

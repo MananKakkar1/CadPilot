@@ -14,7 +14,7 @@ export default async function ProjectsPage() {
         <div className="projects-page">
         <main className="project-empty">
           <FolderOpen aria-hidden="true" /><p className="site-eyebrow">YOUR DESIGN LIBRARY</p><h1>Your next project<br />starts here.</h1>
-          <p>Projects keep your design conversation, validated revisions, and publishable files together.</p>
+          <p>Projects keep your design session, validated revisions, and publishable files together.</p>
           <div className="site-empty-actions"><Button asChild><Link href="/sign-in">Sign in</Link></Button><Link href="/sign-up">Create an account →</Link></div>
         </main></div>
       </SiteShell>

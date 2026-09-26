@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth/password';
+import { isPasswordValid, passwordFailures } from '@/lib/auth/password-policy';
+import { isEmailValid, isUsernameValid, USERNAME_HINT } from '@/lib/auth/signup-validation';
 import { createSession, setSessionCookie } from '@/lib/auth/session';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -13,18 +12,18 @@ export async function POST(request: Request) {
   const username = typeof body?.username === 'string' ? body.username.trim() : '';
   const password = typeof body?.password === 'string' ? body.password : '';
 
-  if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+  if (!isEmailValid(email)) {
+    return NextResponse.json({ error: 'Invalid email address', field: 'email' }, { status: 400 });
   }
-  if (!USERNAME_RE.test(username)) {
+  if (!isUsernameValid(username)) {
     return NextResponse.json(
-      { error: 'Username must be 3-20 characters (letters, numbers, underscore)' },
+      { error: `Username must be ${USERNAME_HINT}`, field: 'username' },
       { status: 400 },
     );
   }
-  if (password.length < 8) {
+  if (!isPasswordValid(password)) {
     return NextResponse.json(
-      { error: 'Password must be at least 8 characters' },
+      { error: `Password does not meet requirements: ${passwordFailures(password).join(', ')}`, field: 'password' },
       { status: 400 },
     );
   }
@@ -38,9 +37,10 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      const target = (err.meta?.target as string[] | undefined)?.join(', ');
+      const targets = (err.meta?.target as string[] | undefined) ?? [];
+      const field = targets.includes('email') ? 'email' : targets.includes('username') ? 'username' : undefined;
       return NextResponse.json(
-        { error: `An account with that ${target ?? 'email/username'} already exists` },
+        { error: `An account with that ${targets.join(', ') || 'email/username'} already exists`, field },
         { status: 409 },
       );
     }

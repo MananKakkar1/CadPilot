@@ -7,6 +7,8 @@ import { ArrowRight, KeyRound } from 'lucide-react';
 import { Input } from '@/components/magicui/input';
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { Button } from '@/components/magicui/button';
+import { PasswordChecklist } from '@/components/auth/password-checklist';
+import { isPasswordValid } from '@/lib/auth/password-policy';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -58,8 +60,9 @@ function ResetPasswordForm() {
             <label htmlFor="reset-new-password">New password
               <Input id="reset-new-password" autoComplete="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="At least 8 characters" minLength={8} required />
             </label>
+            <PasswordChecklist password={newPassword} />
             {error && <p className="auth-error" role="alert">{error}</p>}
-            <Button type="submit" disabled={pending}>{pending ? 'Please wait…' : 'Reset password'} <ArrowRight /></Button>
+            <Button type="submit" disabled={pending || !isPasswordValid(newPassword)}>{pending ? 'Please wait…' : 'Reset password'} <ArrowRight /></Button>
           </form>
           <p className="auth-switch">Didn&apos;t get a code? <Link href="/forgot-password">Request another</Link></p>
         </div>

@@ -2,8 +2,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { ViewportTools, type CadCommand } from './viewport-tools';
 import { HANDOFF_TO_CHILI_NAME, HANDOFF_TO_CHILI_STEP } from './cad-handoff';
+import { FeatureTimeline, type FeatureList } from './feature-timeline';
 
-export type WorkbenchState = { activeCommand: string | null; canCancel: boolean; selectedCount: number };
+// Chili3D's own navigation profiles (confirmed against the pinned upstream source,
+// packages/core/src/navigation.ts): each name drives mouse orbit/pan/zoom bindings, wheel
+// zoom direction, AND keyboard shortcuts together — one setting covers navigation and
+// shortcut presets both, there's no separate keymap to wire up.
+export const NAV_PRESETS = ['Chili3d', 'Revit', 'Blender', 'Creo', 'Solidworks'] as const;
+export type NavPreset = (typeof NAV_PRESETS)[number];
+
+export type WorkbenchState = { activeCommand: string | null; canCancel: boolean; selectedCount: number; navPreset?: NavPreset };
 
 type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'workbench-state'; state: WorkbenchState }
@@ -13,6 +21,7 @@ type BridgeMessage =
   | { source: 'chili3d-bridge'; type: 'import-done' }
   | { source: 'chili3d-bridge'; type: 'preview-ready' }
   | { source: 'chili3d-bridge'; type: 'commands'; commands: CadCommand[] }
+  | { source: 'chili3d-bridge'; type: 'feature-list'; list: FeatureList | null }
   | { source: 'chili3d-bridge'; type: 'export-step'; step: string; name?: string };
 
 type Status = 'loading' | 'importing' | 'ready' | 'saving' | 'saved' | 'error';
@@ -29,8 +38,11 @@ export function CadWorkbench({ projectSlug, parentRevisionId, embedded = false, 
   const [preview, setPreview] = useState<unknown>(null);
   const [bridgeReady, setBridgeReady] = useState(false);
   const [commands, setCommands] = useState<CadCommand[]>([]);
-  const [panels, setPanels] = useState(false);
+  // Native tree/property sidebar starts open: persistent chrome by default (matches
+  // Fusion/SolidWorks/Onshape's always-present panels), not a closed-by-default flyout.
+  const [panels, setPanels] = useState(true);
   const [engineState, setEngineState] = useState<WorkbenchState>({ activeCommand: null, canCancel: false, selectedCount: 0 });
+  const [featureList, setFeatureList] = useState<FeatureList | null>(null);
 
   useEffect(() => {
     setPluginUrl(`${window.location.origin}/chili3d-bridge/plugins/agentic-cad-bridge/`);
@@ -81,10 +93,14 @@ export function CadWorkbench({ projectSlug, parentRevisionId, embedded = false, 
         setCommands(data.commands.filter((command) => !/^(?:wechat|ai)\./i.test(command.key)));
         return;
       }
+      if (data.type === 'feature-list') { setFeatureList(data.list); return; }
 
       if (data.type === 'ready') {
         setBridgeReady(true);
         iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'get-commands' }, window.location.origin);
+        // Sync the sidebar's starting state (open) — the engine's CSS defaults to hidden
+        // until this message arrives, so the host's `panels` state is the source of truth.
+        iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-panels', visible: panels }, window.location.origin);
         const step = stepText ? null : window.localStorage.getItem(HANDOFF_TO_CHILI_STEP);
         const name = window.localStorage.getItem(HANDOFF_TO_CHILI_NAME) ?? 'model';
         if (step && iframeRef.current?.contentWindow) {
@@ -143,7 +159,7 @@ export function CadWorkbench({ projectSlug, parentRevisionId, embedded = false, 
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onSaved, preview, projectSlug, parentRevisionId, stepText]);
+  }, [onSaved, preview, projectSlug, parentRevisionId, stepText, panels]);
 
   useEffect(() => {
     if (bridgeReady && preview && iframeRef.current?.contentWindow) iframeRef.current.contentWindow.postMessage({ source: 'agentic-cad', type: 'import-preview', preview }, window.location.origin);
@@ -172,6 +188,9 @@ export function CadWorkbench({ projectSlug, parentRevisionId, embedded = false, 
         togglePanels={() => {
           setPanels(!panels);
           iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-panels', visible: !panels }, window.location.origin);
+        }}
+        setNavPreset={(preset) => {
+          iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-nav-preset', preset }, window.location.origin);
         }} />
       <div className="cad-scene-frame">
         {pluginUrl && <iframe ref={iframeRef} className="chili-editor-iframe"
@@ -179,6 +198,13 @@ export function CadWorkbench({ projectSlug, parentRevisionId, embedded = false, 
           title="CadPilot modeling canvas" allow="fullscreen" />}
         {status === 'loading' && <div className="cad-engine-loading" role="status">Loading modeling engine…</div>}
       </div>
+      <FeatureTimeline
+        list={featureList}
+        ready={bridgeReady && status !== 'importing' && status !== 'saving'}
+        onSetRollback={(index) => iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-rollback-index', index }, window.location.origin)}
+        onToggleSuppressed={(id, suppressed) => iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-feature-suppressed', id, suppressed }, window.location.origin)}
+        onSetParameter={(id, key, value) => iframeRef.current?.contentWindow?.postMessage({ source: 'agentic-cad', type: 'set-feature-parameter', id, key, value }, window.location.origin)}
+      />
       {statusMessage && status !== 'loading' && <div className="cad-workbench-notice" role={status === 'error' ? 'alert' : 'status'}>{statusMessage}</div>}
     </section>
   );

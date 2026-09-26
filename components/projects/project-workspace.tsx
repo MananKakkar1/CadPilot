@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
-  AlertCircle, Box, Check, ChevronDown, Code2, FileCode2, Files, GitBranch, Hammer,
+  AlertCircle, Box, Check, ChevronDown, Code2, FileCode2, Files, GitBranch,
   Layers, Maximize2, Moon, PencilRuler, Share2, Sun, X,
 } from 'lucide-react';
 import { EngineeringMarkdown } from '@/components/projects/engineering-markdown';
@@ -353,13 +353,6 @@ export function ProjectWorkspace({ initialProject }: { initialProject: Project }
           </div>
         )}
 
-        {latestRun?.steps.length ? (
-          <div className="wk-card"><span className="wk-label">Run steps</span><div className="wk-steps">
-            {latestRun.steps.map((step) => (
-              <div className="wk-step" key={step.id}><Hammer size={14} /><span className="wk-step-txt"><strong>{step.title}</strong><span>{step.summary ?? step.status.toLowerCase()}</span></span></div>
-            ))}
-          </div></div>
-        ) : null}
       </div>
 
       {revision?.metrics && (

@@ -18,7 +18,7 @@ type AgentComposerProps = {
 };
 
 const MODE_COPY: Record<AgentMode, string> = {
-  ask: 'Answers questions about this design. Builds nothing.',
+  ask: 'Answers questions about this design or general engineering topics. Builds nothing.',
   build: 'Builds geometry directly from the request.',
   plan: 'Returns a plan to approve before any geometry is built.',
 };

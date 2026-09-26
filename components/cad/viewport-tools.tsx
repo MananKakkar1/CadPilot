@@ -1,13 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Undo2, Redo2, Search, PanelRight, Box, Move, Circle, Scissors } from 'lucide-react';
-import type { WorkbenchState } from './cad-workbench';
+import { Undo2, Redo2, Search, PanelRight, Box, Move, Circle, Scissors, Compass } from 'lucide-react';
+import { NAV_PRESETS, type NavPreset, type WorkbenchState } from './cad-workbench';
 import { TooltipHint } from '@/components/magicui/tooltip';
 import { Button } from '@/components/magicui/button';
 import { Input } from '@/components/magicui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/magicui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/magicui/dropdown-menu';
+
+// Chili3D's own native profile names, labeled with the real tool each one's bindings match
+// (verified against the pinned upstream source) — not invented, and not claiming a "Fusion"
+// profile that doesn't exist upstream.
+const NAV_PRESET_LABEL: Record<NavPreset, string> = {
+  Chili3d: 'Default',
+  Revit: 'Revit-style',
+  Blender: 'Blender-style',
+  Creo: 'Creo-style',
+  Solidworks: 'SolidWorks-style',
+};
 
 export type CadCommand = { key: string; label?: string; helpText?: string };
 export const toolGroups = ['File', 'Edit', 'Create', 'Sketch', 'Constraints', 'Modify', 'Inspect', 'View', 'Other'];
@@ -21,10 +32,11 @@ export function commandLabel(command: CadCommand) {
 
 // Feature composition of registry Buttons, DropdownMenu and Input. The command
 // registry stays authoritative; unknown future commands remain in Other/search.
-export function ViewportTools({ commands, ready, execute, panels, togglePanels, state, cancel, canSave }: {
+export function ViewportTools({ commands, ready, execute, panels, togglePanels, state, cancel, canSave, setNavPreset }: {
   commands: CadCommand[]; ready: boolean; execute: (key: string) => void;
   panels: boolean; togglePanels: () => void;
   state: WorkbenchState; cancel: () => void; canSave: boolean;
+  setNavPreset: (preset: NavPreset) => void;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -55,6 +67,18 @@ export function ViewportTools({ commands, ready, execute, panels, togglePanels, 
         return c ? <Button key={key} size="sm" variant="ghost" disabled={!ready} onClick={() => execute(key)}><Icon aria-hidden="true" />{commandLabel(c)}</Button> : null;
       })}
       <span className="cad-toolbar-spacer" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon-sm" variant="ghost" title={`Navigation: ${NAV_PRESET_LABEL[state.navPreset ?? 'Chili3d']}`} aria-label={`Navigation and shortcut style: ${NAV_PRESET_LABEL[state.navPreset ?? 'Chili3d']}`} disabled={!ready}><Compass aria-hidden="true" /></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="cad-command-menu cad-workbench-surface" align="end">
+          {NAV_PRESETS.map((preset) => (
+            <DropdownMenuItem key={preset} disabled={!ready} aria-pressed={(state.navPreset ?? 'Chili3d') === preset} onSelect={() => setNavPreset(preset)}>
+              {NAV_PRESET_LABEL[preset]}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <TooltipHint label="Objects and properties"><Button size="icon-sm" variant="ghost" aria-label="Objects and properties" aria-pressed={panels} disabled={!ready} onClick={togglePanels}><PanelRight aria-hidden="true" /></Button></TooltipHint>
       <Popover open={searchOpen} onOpenChange={setSearchOpen}>
       <PopoverTrigger asChild><Button size="icon-sm" variant="ghost" aria-label="Find tool"><Search aria-hidden="true" /></Button></PopoverTrigger>

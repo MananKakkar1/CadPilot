@@ -14,16 +14,23 @@ type PlanDetail = {
 
 type ValidationDetail = { valid?: boolean; complete?: boolean; warnings?: string[]; score?: number; findings?: string[] };
 type EvaluateDetail = { metrics?: Record<string, unknown>; validation?: ValidationDetail };
+type RepairDetail = { attempt?: number; error?: string };
+type DrawingDetail = { views?: Array<{ name?: string } | string>; notes?: string[] };
 
-// generate/repair/preview.ready/drawing are sequential sub-steps of one build attempt,
-// so consecutive events of these stages collapse into a single compact timeline card.
-const OPERATION_STAGES = new Set(['generate', 'repair', 'preview.ready', 'drawing']);
+// generate/preview.ready are routine sequential sub-steps of one build attempt, so
+// consecutive events of these stages collapse into a single compact timeline card.
+// repair and drawing get their own distinct card kinds below — a repair means a build
+// attempt actually failed and is being retried, and a drawing produces a real artifact;
+// neither should look like a routine progress tick.
+const OPERATION_STAGES = new Set(['generate', 'preview.ready']);
 
 type Group =
   | { kind: 'thinking'; event: TimelineEvent }
   | { kind: 'intent'; event: TimelineEvent }
   | { kind: 'plan'; event: TimelineEvent }
   | { kind: 'operation'; events: TimelineEvent[] }
+  | { kind: 'repair'; event: TimelineEvent }
+  | { kind: 'drawing'; event: TimelineEvent }
   | { kind: 'evaluate'; event: TimelineEvent }
   | { kind: 'failed'; event: TimelineEvent }
   | { kind: 'generic'; event: TimelineEvent };
@@ -34,6 +41,8 @@ function groupEvents(events: TimelineEvent[]): Group[] {
     if (event.stage === 'thinking') { groups.push({ kind: 'thinking', event }); continue; }
     if (event.stage === 'intent') { groups.push({ kind: 'intent', event }); continue; }
     if (event.stage === 'plan') { groups.push({ kind: 'plan', event }); continue; }
+    if (event.stage === 'repair') { groups.push({ kind: 'repair', event }); continue; }
+    if (event.stage === 'drawing') { groups.push({ kind: 'drawing', event }); continue; }
     if (event.stage === 'evaluate') { groups.push({ kind: 'evaluate', event }); continue; }
     if (event.stage === 'failed') { groups.push({ kind: 'failed', event }); continue; }
     if (OPERATION_STAGES.has(event.stage)) {
@@ -49,8 +58,7 @@ function groupEvents(events: TimelineEvent[]): Group[] {
   return groups;
 }
 
-const operationIcon = (stage: string) =>
-  stage === 'generate' ? FileCode2 : stage === 'repair' ? Wrench : stage === 'drawing' ? PencilRuler : Hammer;
+const operationIcon = (stage: string) => stage === 'generate' ? FileCode2 : Hammer;
 
 function Step({ event, icon: Icon }: { event: TimelineEvent; icon: typeof Hammer }) {
   return (
@@ -165,6 +173,37 @@ function ValidationCard({ event }: { event: TimelineEvent }) {
   );
 }
 
+/** A build attempt actually failed and is being retried — this must not look like routine progress. */
+function RepairCard({ event }: { event: TimelineEvent }) {
+  const detail = (event.detail ?? null) as RepairDetail | null;
+  return (
+    <div className="wk-card wk-check wk-check-warn">
+      <span className="wk-card-head"><span className="wk-label"><Wrench size={11} aria-hidden="true" /> Repair{detail?.attempt ? ` · attempt ${detail.attempt}` : ''}</span></span>
+      <p>{event.summary}</p>
+      {detail?.error && <ul className="wk-list wk-list-warn"><li>{detail.error}</li></ul>}
+    </div>
+  );
+}
+
+/** A projected drawing/sketch was produced — a real artifact, not a text summary. */
+function DrawingCard({ event }: { event: TimelineEvent }) {
+  const detail = (event.detail ?? null) as DrawingDetail | null;
+  const views = Array.isArray(detail?.views) ? detail.views : [];
+  const notes = Array.isArray(detail?.notes) ? detail.notes : [];
+  return (
+    <div className="wk-card">
+      <span className="wk-card-head"><span className="wk-label"><PencilRuler size={11} aria-hidden="true" /> Drawing</span></span>
+      <p>{event.summary}</p>
+      {(views.length > 0 || notes.length > 0) && (
+        <ul className="wk-list">
+          {views.map((view, index) => <li key={`view-${index}`}>{typeof view === 'string' ? view : view.name ?? `View ${index + 1}`}</li>)}
+          {notes.map((note, index) => <li key={`note-${index}`}>{note}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function FailedCard({ event }: { event: TimelineEvent }) {
   const detail = event.detail as { message?: string } | null | undefined;
   return (
@@ -185,6 +224,8 @@ export function AgentMarkers({ events, busy }: { events: TimelineEvent[]; busy: 
         if (group.kind === 'intent') return <IntentCard key={group.event.id} event={group.event} />;
         if (group.kind === 'plan') return <PlanCard key={group.event.id} event={group.event} />;
         if (group.kind === 'operation') return <OperationTimeline key={group.events[0].id} events={group.events} />;
+        if (group.kind === 'repair') return <RepairCard key={group.event.id} event={group.event} />;
+        if (group.kind === 'drawing') return <DrawingCard key={group.event.id} event={group.event} />;
         if (group.kind === 'evaluate') return <ValidationCard key={group.event.id} event={group.event} />;
         if (group.kind === 'failed') return <FailedCard key={group.event.id} event={group.event} />;
         return <div className="wk-card" key={group.event.id}><div className="wk-steps"><Step event={group.event} icon={Hammer} /></div></div>;

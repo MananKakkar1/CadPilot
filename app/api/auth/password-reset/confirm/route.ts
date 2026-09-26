@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth/password';
+import { isPasswordValid, passwordFailures } from '@/lib/auth/password-policy';
 import { consumeVerificationCode } from '@/lib/auth/codes';
 
 export async function POST(request: Request) {
@@ -9,9 +10,12 @@ export async function POST(request: Request) {
   const code = typeof body?.code === 'string' ? body.code.trim() : '';
   const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
 
-  if (!email || !code || newPassword.length < 8) {
+  if (!email || !code) {
+    return NextResponse.json({ error: 'Email and code are required' }, { status: 400 });
+  }
+  if (!isPasswordValid(newPassword)) {
     return NextResponse.json(
-      { error: 'Email, code, and a new password (min 8 characters) are required' },
+      { error: `Password does not meet requirements: ${passwordFailures(newPassword).join(', ')}` },
       { status: 400 },
     );
   }

@@ -1,0 +1,125 @@
+/* CadPilot design tokens — Geist-derived scale adapted for a dense CAD workspace.
+   Borders are drawn as zero-offset box-shadows (the Geist technique) so they sit in the
+   shadow layer: no box-model shift, clean rounding, and cheap state transitions. */
+
+:root {
+  /* Surface ramp — near-white body, pure-white raised surfaces. */
+  --w-bg: #fafafa;
+  --w-surface: #ffffff;
+  --w-surface-2: #f5f5f5;
+  --w-surface-3: #ebebeb;
+  --w-inset: #f2f2f2;
+
+  /* Ink ramp. */
+  --w-ink: #171717;
+  --w-ink-2: #5c5c5c;
+  --w-ink-3: #8f8f8f;
+  --w-ink-4: #b4b4b4;
+
+  /* Hairlines. */
+  --w-line: rgba(0, 0, 0, .09);
+  --w-line-strong: rgba(0, 0, 0, .16);
+  --w-hairline: 0 0 0 1px var(--w-line);
+  --w-hairline-strong: 0 0 0 1px var(--w-line-strong);
+
+  /* One interactive accent. Geometry/status hues stay separate from it. */
+  --w-accent: #0070f3;
+  --w-accent-hover: #0060d9;
+  --w-accent-wash: rgba(0, 112, 243, .08);
+  --w-accent-ring: rgba(0, 112, 243, .28);
+  --w-on-accent: #ffffff;
+
+  /* Semantic status — never reused for plain interaction. */
+  --w-ok: #16803c;
+  --w-ok-bg: #f2fbf5;
+  --w-warn: #b45309;
+  --w-warn-bg: #fffaf0;
+  --w-danger: #c62828;
+  --w-danger-bg: #fef6f6;
+  --w-pending: #6b5cf6;
+
+  /* Type. Geist variables are supplied by next/font in layout.tsx. */
+  --w-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --w-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* 4px spacing scale. */
+  --w-1: 4px;
+  --w-2: 8px;
+  --w-3: 12px;
+  --w-4: 16px;
+  --w-5: 20px;
+  --w-6: 24px;
+  --w-8: 32px;
+  --w-10: 40px;
+
+  --w-r-sm: 6px;
+  --w-r: 8px;
+  --w-r-lg: 12px;
+
+  --w-shadow-pop: 0 0 0 1px var(--w-line), 0 8px 24px rgba(0, 0, 0, .10), 0 2px 6px rgba(0, 0, 0, .04);
+  --w-topbar-h: 52px;
+}
+
+:root[data-theme='dark'] {
+  --w-bg: #0a0a0a;
+  --w-surface: #111111;
+  --w-surface-2: #171717;
+  --w-surface-3: #202020;
+  --w-inset: #161616;
+
+  --w-ink: #ededed;
+  --w-ink-2: #a1a1a1;
+  --w-ink-3: #7d7d7d;
+  --w-ink-4: #565656;
+
+  --w-line: rgba(255, 255, 255, .11);
+  --w-line-strong: rgba(255, 255, 255, .2);
+
+  --w-accent: #3291ff;
+  --w-accent-hover: #4b9dff;
+  --w-accent-wash: rgba(50, 145, 255, .12);
+  --w-accent-ring: rgba(50, 145, 255, .36);
+
+  --w-ok: #4ec77f;
+  --w-ok-bg: #0e1f14;
+  --w-warn: #f5a623;
+  --w-warn-bg: #211705;
+  --w-danger: #ff6166;
+  --w-danger-bg: #230d0d;
+  --w-pending: #a48fff;
+
+  --w-shadow-pop: 0 0 0 1px var(--w-line), 0 10px 28px rgba(0, 0, 0, .6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --w-bg: #0a0a0a;
+    --w-surface: #111111;
+    --w-surface-2: #171717;
+    --w-surface-3: #202020;
+    --w-inset: #161616;
+
+    --w-ink: #ededed;
+    --w-ink-2: #a1a1a1;
+    --w-ink-3: #7d7d7d;
+    --w-ink-4: #565656;
+
+    --w-line: rgba(255, 255, 255, .11);
+    --w-line-strong: rgba(255, 255, 255, .2);
+
+    --w-accent: #3291ff;
+    --w-accent-hover: #4b9dff;
+    --w-accent-wash: rgba(50, 145, 255, .12);
+    --w-accent-ring: rgba(50, 145, 255, .36);
+
+    --w-ok: #4ec77f;
+    --w-ok-bg: #0e1f14;
+    --w-warn: #f5a623;
+    --w-warn-bg: #211705;
+    --w-danger: #ff6166;
+    --w-danger-bg: #230d0d;
+    --w-pending: #a48fff;
+
+    --w-shadow-pop: 0 0 0 1px var(--w-line), 0 10px 28px rgba(0, 0, 0, .6);
+  }
+}

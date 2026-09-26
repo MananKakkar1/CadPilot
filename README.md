@@ -174,7 +174,7 @@ Important invariants:
 | `/api/projects/:slug/publish` | `POST` | Publish a valid revision |
 | `/api/artifacts/:id` | `GET` | Download an authorized artifact |
 | `/api/projects/:slug/chili-import` | `POST` | Save a ChiliCAD edit as a new revision |
-| `/api/projects/:slug/revisions/:revisionId/viewport-save` | `POST` | Save an embedded Chili3D edit as a derived revision |
+| `/api/projects/:slug/chili-import` | `POST` | Validate an embedded Chili3D edit and save a derived revision; accepts `parentRevisionId` |
 | `/api/profile` | `GET`, `PUT` | Read and update the current profile |
 | `/api/generate-cad` | `POST` | Direct generation endpoint retained for the non-project CAD flow |
 

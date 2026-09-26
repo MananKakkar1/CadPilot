@@ -144,6 +144,8 @@ model Revision {
   parent         Revision?  @relation("RevisionParent", fields: [parentId], references: [id], onDelete: SetNull)
   children       Revision[] @relation("RevisionParent")
   prompt         String
+  label          String?
+  archivedAt     DateTime?  @map("archived_at")
   intent         Json
   plan           Json
   metrics        Json?

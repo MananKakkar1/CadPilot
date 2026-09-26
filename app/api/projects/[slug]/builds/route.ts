@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { AgentRunStatus, AgentStepStatus, AgentStepType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { parsePrompt } from '@/lib/cad/contracts';
 import { requireProjectOwner } from '@/lib/projects';
+import { queueBuild } from '@/lib/cad/queue-build';
+import { notifyCadWorker } from '@/lib/cad/worker-socket';
+
+export const runtime = 'nodejs';
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -11,15 +14,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     const body = await request.json().catch(() => ({}));
     const prompt = parsePrompt(body.prompt);
     const parentId = typeof body.parentRevisionId === 'string' ? body.parentRevisionId : null;
-    if (parentId && !await prisma.revision.findFirst({ where: { id: parentId, projectId: project.id } })) return NextResponse.json({ error: 'Invalid parent revision.' }, { status: 400 });
-    const { job, run } = await prisma.$transaction(async (tx) => {
-      const createdJob = await tx.buildJob.create({ data: { projectId: project.id, prompt, parentId } });
-      const createdRun = await tx.agentRun.create({ data: { projectId: project.id, buildJobId: createdJob.id, prompt, mode: 'execute', status: AgentRunStatus.QUEUED, title: 'CAD build', steps: { create: { sequence: 1, type: AgentStepType.PLAN, status: AgentStepStatus.PENDING, title: 'Prepare an editable CAD build' } } } });
-      await tx.chatMessage.create({ data: { conversation: { connectOrCreate: { where: { projectId: project.id }, create: { projectId: project.id } } }, role: 'user', content: prompt } });
-      return { job: createdJob, run: createdRun };
-    });
-    await prisma.buildEvent.create({ data: { jobId: job.id, sequence: 1, stage: 'queued', agent: 'orchestrator', summary: 'Build queued for the isolated CAD worker.' } });
-    await prisma.agentEvent.create({ data: { runId: run.id, sequence: 1, type: 'run.created', summary: 'CAD build queued for the isolated worker.', payload: { jobId: job.id } } });
-    return NextResponse.json({ job, run }, { status: 202 });
+    if (parentId && !await prisma.revision.findFirst({ where: { id: parentId, projectId: project.id, isValid: true, archivedAt: null } })) return NextResponse.json({ error: 'Choose a completed revision as the editing base.' }, { status: 400 });
+    const { job, run } = await prisma.$transaction((tx) => queueBuild(tx, { projectId: project.id, prompt, parentId }));
+    const workerConnected = await notifyCadWorker(job.id);
+    return NextResponse.json({ job, run, workerConnected }, { status: 202 });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to create build.' }, { status: 400 }); }
 }

@@ -18,6 +18,11 @@ export function CadModelVisual({ model, initialResult, eyebrow = 'REPLICAD / OPE
   const viewerRef = useRef<Viewer | null>(null);
   const [result, setResult] = useState<CadModelResult | null>(null);
   const [visible, setVisible] = useState(priority);
+  // `createViewer` resolves asynchronously, so its callback would otherwise close over whatever
+  // `result` was when the effect ran (null on first paint, even when `initialResult` is supplied).
+  // The ref always holds the latest geometry, so the viewer is populated as soon as it exists.
+  const resultRef = useRef<CadModelResult | null>(null);
+  resultRef.current = result;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -46,7 +51,8 @@ export function CadModelVisual({ model, initialResult, eyebrow = 'REPLICAD / OPE
     createViewer(canvasRef.current, { interactive: false, autoRotate: true }).then((created) => {
       if (disposed) return created.dispose();
       viewerRef.current = created;
-      created.setParts(result ? [{ mesh: result.mesh, color: modelColors[model] }] : []);
+      const latest = resultRef.current;
+      created.setParts(latest ? [{ mesh: latest.mesh, color: modelColors[model] }] : []);
     });
     return () => { disposed = true; viewerRef.current?.dispose(); viewerRef.current = null; };
   }, [model, visible]);

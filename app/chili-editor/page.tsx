@@ -1,4 +1,7 @@
-import { ChiliEditor } from '@/components/cad/chili-editor';
+import { CadWorkbench } from '@/components/cad/cad-workbench';
+import { Button } from '@/components/magicui/button';
+import Link from 'next/link';
+import { SiteShell } from '@/components/app-shell/site-shell';
 
 export default async function ChiliEditorPage({ searchParams }: { searchParams: Promise<{ project?: string; revision?: string }> }) {
   const params = await searchParams;
@@ -6,15 +9,13 @@ export default async function ChiliEditorPage({ searchParams }: { searchParams: 
   const backHref = projectSlug ? `/projects/${projectSlug}` : '/projects';
 
   return (
-    <main className="chili-editor-shell">
-      <header className="agent-topbar">
-        <a href={backHref}>← Back to project</a>
-        <div>
-          <strong>ChiliCAD editor</strong>
-          <span>Chili3D · full parametric editing</span>
-        </div>
+    <SiteShell footer={false}><main className="cad-workbench-page">
+      <header className="cad-workbench-header">
+        <Button asChild variant="ghost" size="sm"><Link href={backHref}>← Projects</Link></Button>
+        <strong>CadPilot</strong>
+        <span>Workbench</span>
       </header>
-      <ChiliEditor projectSlug={projectSlug} parentRevisionId={params.revision ?? null} />
-    </main>
+      <CadWorkbench projectSlug={projectSlug} parentRevisionId={params.revision ?? null} />
+    </main></SiteShell>
   );
 }

@@ -1,0 +1,202 @@
+/* Deliberately route-scoped: no :root, body or unscoped selectors. The project
+   workspace does not use this module or shell. */
+.root {
+  --site-ink: #19191e;
+  --site-muted: #656570;
+  --site-line: #dddde5;
+  --site-accent: #6450b8;
+  --site-wash: #efecf7;
+  --primary: #25232d;
+  --primary-foreground: #fff;
+  --background: #fff;
+  --foreground: #19191e;
+  --input: #cdcbd5;
+  --ring: #7964c4;
+  --muted-foreground: #656570;
+  --accent: #efecf7;
+  --accent-foreground: #19191e;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  letter-spacing: -.012em;
+  color: var(--site-ink);
+  background: #faf9fc;
+  min-height: 100dvh;
+  color-scheme: light;
+}
+.root :global(h1), .root :global(h2), .root :global(h3), .root :global(p) { margin-top: 0; }
+.root :global(h1) { font-size: clamp(36px, 4.5vw, 60px); font-weight: 500; letter-spacing: -.045em; line-height: 1.08; text-wrap: balance; }
+.root :global(h2) { font-size: clamp(28px, 3.4vw, 44px); font-weight: 500; letter-spacing: -.035em; line-height: 1.15; text-wrap: balance; }
+.root :global(h3) { font-size: 21px; font-weight: 550; letter-spacing: -.025em; }
+.root :global(a) { color: inherit; text-decoration: none; }
+.root :global(a:hover) { color: var(--site-accent); }
+.root :global(:focus-visible) { outline: 2px solid #8b75dc; outline-offset: 4px; }
+.root :global([data-slot=button]) { min-height: 44px; padding: 0 23px; border-radius: 999px; font: 550 14px/1.2 var(--font-geist-sans), Arial, sans-serif; letter-spacing: -.01em; cursor: pointer; box-shadow: none; transition: background-color 160ms, color 160ms, border-color 160ms; }
+.root :global([data-slot=button][data-variant=default]) { background: #25232d; color: #fff; border: 1px solid #25232d; }
+.root :global([data-slot=button][data-variant=default]:hover) { background: #4c3c81; border-color: #4c3c81; }
+.root :global([data-slot=button][data-variant=outline]) { background: transparent; color: inherit; border: 1px solid var(--site-line); }
+.root :global([data-slot=button][data-variant=ghost]) { background: transparent; color: inherit; }
+.root :global([data-slot=button][data-variant=ghost]:hover), .root :global([data-slot=button][data-variant=outline]:hover) { background: var(--site-wash); color: var(--site-ink); }
+.root :global([data-slot=input]) { height: 50px; border: 1px solid var(--site-line); background: #fff; color: var(--site-ink); border-radius: 8px; padding: 12px 14px; font: 400 16px/1.4 var(--font-geist-sans), Arial, sans-serif; box-shadow: none; }
+.root :global([data-slot=input]:focus-visible) { border-color: var(--site-accent); outline: 2px solid #d1c7ee; outline-offset: 2px; }
+.root :global(.site-eyebrow) { font: 600 11px/1.5 var(--font-geist-sans), Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--site-accent); margin-bottom: 22px; }
+.root :global(.app-header) { height: 88px; padding: 0 max(24px, calc((100vw - 1200px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 32px; background: #101014; color: #fff; border-bottom: 1px solid #333139; }
+.root :global(.app-header-primary), .root :global(.app-header-account), .root :global(.app-header-nav) { display: flex; align-items: center; gap: 28px; }
+.root :global(.app-header-primary) { flex: 1; justify-content: space-between; }
+.root :global(.app-header-brand) { display: flex; align-items: center; gap: 11px; font-size: 26px; font-weight: 600; letter-spacing: -.05em; color: #fff; }
+.root :global(.app-header-brand svg) { width: 30px; height: 30px; stroke-width: 1.5; color: #d3c0ff; }
+.root :global(.app-header-nav a), .root :global(.app-header-account a) { font-size: 14px; font-weight: 500; white-space: nowrap; color: #e3dfea; }
+.root :global(.app-header a:hover) { color: #d3c0ff; }
+.root :global(.app-header-account [data-slot=button]) { background: transparent; border: 1px solid #8e8a98; color: #fff; }
+.root :global(.app-header-account [data-slot=button]:hover) { background: #e0d3ff; color: #18141f; border-color: #e0d3ff; }
+.root :global(.app-header-user) { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.root :global(.site-mobile-menu) { display: none; }
+.root :global(.site-footer) { padding: 40px max(24px, calc((100vw - 1200px) / 2)); display: flex; flex-wrap: wrap; gap: 24px; align-items: center; background: #101014; color: #d2cedb; border-top: 1px solid #333139; }
+.root :global(.site-wordmark) { font-size: 25px; font-weight: 550; color: #fff; letter-spacing: -.05em; }
+.root :global(.site-wordmark span) { font-size: 12px; vertical-align: top; margin-left: 4px; }
+.root :global(.site-footer p) { font-size: 13px; margin: 0; flex: 1; }
+.root :global(.site-footer nav) { display: flex; gap: 24px; font-size: 13px; }
+.root :global(.site-footer small) { font-size: 12px; }
+/* Marketing: one live CAD visual, editorial sections, no decorative WebGL. */
+.root :global(.site-hero) { background: #101014; color: #fff; padding: 72px 24px 0; text-align: center; overflow: hidden; }
+.root :global(.site-hero .site-eyebrow) { color: #d3c0ff; }
+.root :global(.site-hero h1) { font-size: clamp(40px, 5.4vw, 76px); max-width: 1000px; margin: 0 auto 26px; line-height: 1.04; font-weight: 450; }
+.root :global(.site-hero h1 em) { font-style: normal; color: #d3c0ff; }
+.root :global(.site-hero-copy) { color: #c4c0cf; max-width: 610px; margin: 0 auto; font-size: 18px; line-height: 1.6; }
+.root :global(.site-hero-actions) { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 20px; margin: 30px 0 46px; }
+.root :global(.site-hero-actions [data-slot=button]) { background: #e0d3ff; color: #1d172a; border-color: #e0d3ff; min-height: 48px; }
+.root :global(.site-hero-actions [data-slot=button]:hover) { background: #eee6ff; border-color: #eee6ff; }
+.root :global(.site-hero-actions > a:last-child) { font-size: 14px; border-bottom: 1px solid #777080; padding-block: 7px; }
+.root :global(.site-hero .cad-model-visual) { margin: 0 auto; width: min(1100px, 100%); height: clamp(300px, 35vw, 470px); border: 1px solid #d2cfdd; border-radius: 18px 18px 0 0; background: #f0eef6; box-shadow: none; position: relative; overflow: hidden; }
+.root :global(.site-hero .cad-model-visual canvas) { width: 100%; height: 100%; display: block; }
+.root :global(.model-visual-meta), .root :global(.model-visual-foot) { color: #514c60; font: 11px/1.4 var(--font-geist-sans), Arial, sans-serif; letter-spacing: .04em; padding: 20px 24px; z-index: 1; }
+.root :global(.site-capabilities) { background: #e8e1f3; padding: 23px 24px; display: flex; justify-content: center; flex-wrap: wrap; gap: 16px 50px; font-size: 13px; color: #3b324d; }
+.root :global(.site-capabilities span) { display: flex; gap: 10px; align-items: center; }
+.root :global(.site-section) { max-width: 1200px; margin: 0 auto; padding: 100px 24px; }
+.root :global(.site-section-intro) { display: grid; grid-template-columns: 1.2fr 1fr; gap: 80px; align-items: end; margin-bottom: 52px; }
+.root :global(.site-section-intro h2) { max-width: 530px; margin-bottom: 0; }
+.root :global(.site-section-intro > p) { color: var(--site-muted); max-width: 430px; margin: 0; font-size: 17px; }
+.root :global(.site-steps) { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+.root :global(.site-steps li) { padding-top: 25px; border-top: 1px solid #c8c3d4; }
+.root :global(.site-step-number) { display: block; font-size: 13px; color: var(--site-accent); margin-bottom: 36px; }
+.root :global(.site-steps p) { color: var(--site-muted); font-size: 15px; }
+.root :global(.site-output-section) { background: #efecf5; }
+.root :global(.site-output-section .site-section) { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.root :global(.site-output-copy > p:not(.site-eyebrow)) { color: var(--site-muted); max-width: 450px; }
+.root :global(.site-output-list) { margin: 0; }
+.root :global(.site-output-list > div) { padding: 22px 0; border-bottom: 1px solid #d0cadc; display: grid; grid-template-columns: 80px 1fr; gap: 18px; }
+.root :global(.site-output-list dt) { font-weight: 600; font-size: 14px; }
+.root :global(.site-output-list dd) { margin: 0; font-size: 15px; color: var(--site-muted); }
+.root :global(.site-cta) { padding: 90px 24px; text-align: center; }
+.root :global(.site-cta p) { color: var(--site-muted); margin-bottom: 25px; }
+/* Utility pages share the same editorial scale without becoming marketing heroes. */
+.root :global(.projects-page) { width: min(1200px, 100%); min-height: calc(100dvh - 225px); margin: 0 auto; padding: 64px 24px 90px; color: var(--site-ink); background: transparent; }
+.root :global(.projects-page > header) { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 0 44px; padding: 0; border: 0; }
+.root :global(.projects-page > header h1) { margin: 0 0 14px; }
+.root :global(.projects-page > header span), .root :global(.projects-page > header p:not(.site-eyebrow)) { font-size: 16px; color: var(--site-muted); }
+.root :global(.project-search) { max-width: 440px; margin-bottom: 30px; }
+.root :global(.project-row) { display: flex; align-items: center; gap: 24px; padding: 25px 12px; border: 0; border-bottom: 1px solid var(--site-line); border-radius: 0; background: transparent; transition: background 160ms; }
+.root :global(.project-row:hover) { background: #efecf7; color: var(--site-ink); }
+.root :global(.project-row-thumb) { flex: 0 0 58px; width: 58px; height: 58px; background: #e9e2f4; border: 0; border-radius: 12px; color: #6450a1; display: grid; place-items: center; }
+.root :global(.project-row-body) { flex: 1; min-width: 0; }
+.root :global(.project-row strong) { display: block; color: var(--site-ink); font-size: 19px; font-weight: 550; overflow-wrap: anywhere; }
+.root :global(.project-row span) { font-size: 14px; color: var(--site-muted); }
+.root :global(.project-row-meta) { text-align: right; display: grid; gap: 5px; }
+.root :global(.project-row-meta span) { font-size: 12px; }
+.root :global(.project-empty) { padding: 60px 0; border: 0; background: transparent; max-width: 650px; margin: 0 auto; text-align: center; }
+.root :global(.project-empty > svg) { color: var(--site-accent); width: 44px; height: 44px; margin: 0 auto 26px; }
+.root :global(.project-empty p) { color: var(--site-muted); line-height: 1.7; margin-bottom: 28px; }
+.root :global(.site-empty-actions) { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; }
+.root :global(.new-project-page) { padding: 72px 24px 100px; min-height: calc(100dvh - 225px); background: transparent; display: grid; place-items: center; }
+.root :global(.new-project-card) { width: min(100%, 660px); padding: 48px; background: #fff; border: 1px solid var(--site-line); border-radius: 16px; box-shadow: none; }
+.root :global(.new-project-card h1) { font-size: 40px; margin: 0 0 18px; }
+.root :global(.new-project-card > span) { color: var(--site-muted); line-height: 1.65; font-size: 16px; }
+.root :global(.new-project-card form) { margin-top: 34px; display: grid; gap: 20px; }
+.root :global(.new-project-card label) { display: grid; gap: 9px; font-size: 14px; font-weight: 550; }
+.root :global(.new-project-card > a) { margin-top: 12px; }
+.root :global(.form-error), .root :global(.auth-error) { color: #a32943; font-size: 14px; }
+/* Account pages: a common brand panel and a quiet, accessible form. */
+.root :global(.site-auth-layout) { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; min-height: 700px; padding: 64px 24px; gap: 80px; align-items: center; }
+.root :global(.site-auth-story) { padding: 48px; background: #eae3f5; border-radius: 16px; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.root :global(.site-auth-story h2) { font-size: clamp(40px, 4vw, 58px); }
+.root :global(.site-auth-story em) { font-style: normal; color: var(--site-accent); }
+.root :global(.site-auth-story > p:not(.site-eyebrow)) { color: #60576f; max-width: 330px; }
+.root :global(.site-auth-story ul) { list-style: none; padding: 0; margin: 36px 0; display: grid; gap: 20px; }
+.root :global(.site-auth-story li) { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+.root :global(.site-auth-story li svg) { width: 20px; height: 20px; color: #766095; flex: none; }
+.root :global(.site-auth-footnote) { color: #60576f; font-size: 10px; letter-spacing: .13em; margin-top: 30px; }
+.root :global(.site-auth-form) { min-width: 0; }
+.root :global(.auth-card) { width: 100%; background: transparent; border: 0; border-radius: 0; box-shadow: none; color: var(--site-ink); }
+.root :global(.auth-card-content) { padding: 24px 0; }
+.root :global(.auth-icon) { display: none; }
+.root :global(.auth-kicker) { font: 550 11px/1.5 var(--font-geist-sans), Arial, sans-serif; letter-spacing: .12em; color: var(--site-accent); margin: 0 0 18px; }
+.root :global(.auth-card h1) { font-size: 38px; line-height: 1.13; letter-spacing: -.04em; margin: 0 0 16px; }
+.root :global(.auth-intro) { color: var(--site-muted); font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+.root :global(.auth-card label) { color: var(--site-ink); font-size: 14px; font-weight: 500; gap: 8px; }
+.root :global(.auth-card form) { gap: 20px; }
+.root :global(.auth-card .auth-password-toggle) { position: absolute; right: 4px; top: 3px; height: 44px; min-height: 44px; width: 44px; padding: 0; margin: 0; color: var(--site-muted); background: transparent; }
+.root :global(.auth-password-field input) { padding-right: 52px; }
+.root :global(.auth-forgot-link), .root :global(.auth-switch a) { color: var(--site-accent); font-size: 14px; font-weight: 550; }
+.root :global(.auth-switch) { color: var(--site-muted); font-size: 14px; }
+.root :global(.auth-success) { background: #e8f4ed; color: #22603a; font-size: 14px; }
+.root :global(.public-project-preview) { overflow: hidden; border: 1px solid var(--site-line); border-radius: 16px; margin-bottom: 48px; background: #efecf5; }
+.root :global(.public-project-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+.root :global(.public-project-summary), .root :global(.public-project-artifacts) { background: transparent; border: 0; padding: 0; color: var(--site-ink); }
+.root :global(.public-project-summary h2) { margin-top: 14px; font-size: 32px; }
+.root :global(.public-project-summary p) { color: var(--site-muted); }
+.root :global(.public-project-summary dl > div) { border-bottom: 1px solid var(--site-line); padding-block: 14px; }
+.root :global(.public-project-artifact) { display: flex; justify-content: space-between; gap: 20px; padding: 19px 0; border: 0; border-bottom: 1px solid var(--site-line); border-radius: 0; background: transparent; }
+.root :global(.public-project-artifact span) { overflow-wrap: anywhere; }
+.root :global(.public-project-artifact small) { color: var(--site-muted); }
+.root :global(.codex-label) { color: var(--site-accent); font: 550 11px/1.5 var(--font-geist-sans), Arial, sans-serif; letter-spacing: .1em; }
+.root :global(.profile-header) { justify-content: start !important; align-items: center !important; padding-bottom: 36px !important; border-bottom: 1px solid var(--site-line) !important; }
+.root :global(.profile-avatar) { width: 90px; height: 90px; border-radius: 22px; background: #e7def4; color: var(--site-accent); font-size: 26px; flex: none; }
+.root :global(.cad-workbench-page) { height: calc(100dvh - 88px); }
+.root :global(.cad-workbench-header) { background: #faf9fc; }
+@media (max-width: 1000px) {
+  .root :global(.app-header-nav) { gap: 18px; }
+  .root :global(.app-header), .root :global(.app-header-primary) { gap: 20px; }
+  .root :global(.site-auth-layout) { gap: 40px; }
+  .root :global(.site-auth-story) { padding: 32px; }
+}
+@media (max-width: 760px) {
+  .root :global(.app-header) { height: 76px; gap: 12px; padding-inline: 20px; }
+  .root :global(.app-header-primary) { flex: 1; }
+  .root :global(.app-header-brand) { font-size: 23px; gap: 8px; }
+  .root :global(.app-header-brand svg) { width: 25px; }
+  .root :global(.app-header-nav), .root :global(.site-login), .root :global(.app-header-user) { display: none; }
+  .root :global(.app-header-account) { gap: 0; }
+  .root :global(.app-header-account [data-slot=button]) { padding-inline: 16px; font-size: 12px; }
+  .root :global(.app-header-account svg) { display: none; }
+  .root :global(.site-mobile-menu) { display: inline-flex; color: white !important; width: 44px; padding: 0; }
+  .root :global(.site-hero) { padding: 56px 20px 0; }
+  .root :global(.site-hero-copy) { font-size: 16px; }
+  .root :global(.site-hero .cad-model-visual) { height: 300px; }
+  .root :global(.model-visual-meta), .root :global(.model-visual-foot) { padding: 15px; font-size: 10px; }
+  .root :global(.site-section) { padding: 64px 24px; }
+  .root :global(.site-section-intro), .root :global(.site-output-section .site-section) { grid-template-columns: 1fr; gap: 24px; }
+  .root :global(.site-steps) { grid-template-columns: 1fr; gap: 20px; }
+  .root :global(.site-step-number) { margin-bottom: 14px; }
+  .root :global(.site-cta) { padding-block: 64px; }
+  .root :global(.site-auth-layout) { grid-template-columns: 1fr; padding: 40px 24px 64px; min-height: 0; gap: 0; }
+  .root :global(.site-auth-story) { display: none; }
+  .root :global(.site-auth-form) { width: min(480px, 100%); margin: auto; }
+  .root :global(.auth-card-content) { padding: 12px 0; }
+  .root :global(.projects-page) { padding: 44px 24px 64px; }
+  .root :global(.projects-page > header) { flex-wrap: wrap; margin-bottom: 28px; align-items: start; }
+  .root :global(.project-row) { gap: 14px; flex-wrap: wrap; padding-inline: 0; }
+  .root :global(.project-row-thumb) { width: 44px; height: 44px; flex-basis: 44px; }
+  .root :global(.project-row-body) { min-width: calc(100% - 60px); }
+  .root :global(.project-row-meta) { text-align: left; display: flex; flex-wrap: wrap; gap: 6px 16px; margin-left: 58px; }
+  .root :global(.new-project-page) { padding: 40px 20px 64px; }
+  .root :global(.new-project-card) { padding: 28px 24px; }
+  .root :global(.new-project-card h1) { font-size: 34px; }
+  .root :global(.public-project-grid) { grid-template-columns: 1fr; gap: 40px; }
+  .root :global(.site-footer) { gap: 20px; padding: 32px 24px; }
+  .root :global(.site-footer p) { flex-basis: 100%; }
+  .root :global(.site-footer nav) { flex-wrap: wrap; }
+  .root :global(.cad-workbench-page) { height: calc(100dvh - 76px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root :global(*) { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

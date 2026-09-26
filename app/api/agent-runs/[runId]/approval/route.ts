@@ -2,6 +2,7 @@ import { AgentRunStatus, AgentStepStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/projects';
+import { notifyCadWorker } from '@/lib/cad/worker-socket';
 
 export async function POST(request: Request, { params }: { params: Promise<{ runId: string }> }) {
   try {
@@ -25,7 +26,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ run
       return NextResponse.json({ run: rejected });
     }
     const result = await prisma.$transaction(async (tx) => {
-      const job = await tx.buildJob.create({ data: { projectId: run.projectId, prompt: run.prompt } });
+      const metadata = run.metadata as { parentRevisionId?: string | null } | null;
+      const parentId = metadata?.parentRevisionId ?? null;
+      if (parentId && !await tx.revision.findFirst({ where: { id: parentId, projectId: run.projectId, isValid: true } })) throw new Error('The parent revision is not available as a completed editing base.');
+      const job = await tx.buildJob.create({ data: { projectId: run.projectId, prompt: run.prompt, parentId } });
       await tx.approvalRequest.update({ where: { id: approval.id }, data: { status: 'APPROVED', decidedAt: new Date() } });
       await tx.agentRun.update({ where: { id: run.id }, data: { buildJobId: job.id, status: AgentRunStatus.QUEUED, steps: { updateMany: { where: { id: run.steps[0]?.id }, data: { status: AgentStepStatus.PENDING } } } } });
       await tx.buildEvent.create({ data: { jobId: job.id, sequence: 1, stage: 'queued', agent: 'orchestrator', summary: 'Approved build queued for the isolated CAD worker.' } });
@@ -34,6 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ run
       const updatedRun = await tx.agentRun.findUnique({ where: { id: run.id } });
       return { job, run: updatedRun };
     });
+    await notifyCadWorker(result.job.id);
     return NextResponse.json(result, { status: 202 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to update approval.' }, { status: 400 });

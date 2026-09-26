@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (!step.trim()) return NextResponse.json({ error: 'No STEP data was received from ChiliCAD.' }, { status: 400 });
 
     const parentId = typeof body.parentRevisionId === 'string' ? body.parentRevisionId : null;
-    if (parentId && !(await prisma.revision.findFirst({ where: { id: parentId, projectId: project.id } }))) {
+    if (parentId && !(await prisma.revision.findFirst({ where: { id: parentId, projectId: project.id, isValid: true } }))) {
       return NextResponse.json({ error: 'Invalid parent revision.' }, { status: 400 });
     }
 
@@ -51,25 +51,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     // face, solid...); mesh()/measureVolume()/measureArea() all accept any of them at runtime.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const shape = (await replicad.importSTEP(new Blob([step], { type: 'application/step' }))) as any;
+    try {
     const mesh = shape.mesh({ tolerance: 0.12, angularTolerance: 20 });
     const triangleCount = mesh.triangles.length / 3;
+    if (!Number.isInteger(triangleCount) || triangleCount <= 0) return NextResponse.json({ error: 'The edited model has no usable triangle mesh.' }, { status: 400 });
     if (triangleCount > MAX_TRIANGLES) {
       return NextResponse.json({ error: `This model has ${triangleCount.toLocaleString()} triangles, over the ${MAX_TRIANGLES.toLocaleString()} limit.` }, { status: 400 });
     }
     const [min, max] = shape.boundingBox.bounds;
-    const metrics = { volume: Math.round(replicad.measureVolume(shape)), surfaceArea: Math.round(replicad.measureArea(shape)), partCount: 1, triangleCount, bounds: { min, max } };
+    const metrics = { volume: replicad.measureVolume(shape), surfaceArea: replicad.measureArea(shape), partCount: 1, triangleCount, bounds: { min, max } };
+    if (!Number.isFinite(metrics.volume) || !Number.isFinite(metrics.surfaceArea)) throw new Error('Imported geometry has non-finite measurements.');
+    if (metrics.surfaceArea <= 0) return NextResponse.json({ error: 'The edited model has no measurable surface area.' }, { status: 400 });
     const validation = {
       valid: metrics.volume > 0,
+      complete: metrics.volume > 0,
+      warnings: [],
       score: metrics.volume > 0 ? 100 : 0,
       findings: metrics.volume > 0 ? ['Imported a closed BREP from ChiliCAD.', 'Mesh is within the configured limit.'] : ['Imported solid has no measurable volume.'],
     };
     if (!validation.valid) return NextResponse.json({ error: 'The edited model has no measurable volume.' }, { status: 400 });
 
-    const nextNumber = (await prisma.revision.count({ where: { projectId: project.id } })) + 1;
-    const revision = await prisma.revision.create({
+    const revision = await prisma.$transaction(async (tx) => {
+      await tx.project.update({ where: { id: project.id }, data: { updatedAt: new Date() } });
+      const last = await tx.revision.aggregate({ where: { projectId: project.id }, _max: { revisionNumber: true } });
+      return tx.revision.create({
       data: {
         projectId: project.id,
-        revisionNumber: nextNumber,
+        revisionNumber: (last._max.revisionNumber ?? 0) + 1,
         parentId,
         prompt: 'Edited directly in ChiliCAD',
         intent: { object: 'ChiliCAD edit', units: 'mm', dimensions: {}, constraints: ['valid closed BREP'], materials: [] },
@@ -77,9 +85,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
         sourceCode: '// This revision was edited directly in ChiliCAD; there is no generated source for it.',
         metrics,
         validation,
-        isValid: true,
+        isValid: false,
       },
+      });
     });
+    const nextNumber = revision.revisionNumber;
 
     await saveArtifact(revision.id, ArtifactKind.STEP, 'model.step', 'application/step', step);
     await saveArtifact(revision.id, ArtifactKind.STL, 'model.stl', 'model/stl', new Uint8Array(await shape.blobSTL({ binary: true }).arrayBuffer()));
@@ -87,16 +97,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     await saveArtifact(revision.id, ArtifactKind.AUDIT, 'audit.json', 'application/json', JSON.stringify({ metrics, validation }, null, 2));
     await saveArtifact(revision.id, ArtifactKind.VALIDATION_REPORT, 'validation.json', 'application/json', JSON.stringify({ metrics, validation }, null, 2));
 
-    await prisma.chatMessage.create({
+    const completedRevision = await prisma.$transaction(async (tx) => {
+      const artifacts = await tx.artifact.findMany({ where: { revisionId: revision.id }, select: { kind: true } });
+      const required = [ArtifactKind.STEP, ArtifactKind.STL, ArtifactKind.PREVIEW_MESH, ArtifactKind.AUDIT, ArtifactKind.VALIDATION_REPORT];
+      if (required.some((kind) => !artifacts.some((artifact) => artifact.kind === kind))) throw new Error('Imported revision is missing required files.');
+      await tx.chatMessage.create({
       data: {
         conversation: { connectOrCreate: { where: { projectId: project.id }, create: { projectId: project.id } } },
         role: 'assistant',
         content: `## Revision ${nextNumber} — edited in ChiliCAD\n\nThis revision was imported from a manual edit in the ChiliCAD editor.\n\n| Measure | Result |\n| --- | ---: |\n| Volume | ${metrics.volume.toLocaleString()} mm³ |\n| Surface area | ${metrics.surfaceArea.toLocaleString()} mm² |\n| Triangles | ${metrics.triangleCount.toLocaleString()} |`,
         revisionId: revision.id,
       },
+      });
+      return tx.revision.update({ where: { id: revision.id }, data: { isValid: true } });
     });
 
-    return NextResponse.json({ revision }, { status: 201 });
+    return NextResponse.json({ revision: completedRevision }, { status: 201 });
+    } finally {
+      shape.delete();
+    }
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to import this model.' }, { status: 400 });
   }

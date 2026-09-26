@@ -10,11 +10,20 @@ export async function POST(_: Request, { params }: { params: Promise<{ runId: st
   if (!run) return NextResponse.json({ error: 'Run not found.' }, { status: 404 });
   if (['COMPLETED', 'FAILED', 'CANCELLED'].includes(run.status)) return NextResponse.json({ error: 'Run is already finished.' }, { status: 409 });
   const updated = await prisma.$transaction(async (tx) => {
-    if (run.buildJobId) await tx.buildJob.updateMany({ where: { id: run.buildJobId, status: { in: [BuildStatus.QUEUED, BuildStatus.RUNNING] } }, data: { status: BuildStatus.CANCELLED, finishedAt: new Date() } });
+    if (run.buildJobId) {
+      const cancelled = await tx.buildJob.updateMany({ where: { id: run.buildJobId, status: { in: [BuildStatus.QUEUED, BuildStatus.RUNNING] } }, data: { status: BuildStatus.CANCELLED, finishedAt: new Date() } });
+      // The worker may have completed after the initial read. Its transaction
+      // locks this same job row; a completed job must keep its terminal run state.
+      if (!cancelled.count) return null;
+    } else {
+      const cancelled = await tx.agentRun.updateMany({ where: { id: run.id, status: { in: ['QUEUED', 'PLANNING', 'AWAITING_APPROVAL', 'EXECUTING', 'VALIDATING'] } }, data: { status: AgentRunStatus.CANCELLED } });
+      if (!cancelled.count) return null;
+    }
     await tx.agentRun.update({ where: { id: run.id }, data: { status: AgentRunStatus.CANCELLED, cancelledAt: new Date(), steps: { updateMany: { where: { status: { in: ['PENDING', 'RUNNING', 'AWAITING_APPROVAL'] } }, data: { status: 'CANCELLED', finishedAt: new Date() } } }, subagents: { updateMany: { where: { status: { in: ['PENDING', 'RUNNING', 'AWAITING_APPROVAL'] } }, data: { status: 'CANCELLED', updatedAt: new Date() } } } } });
     const lastEvent = await tx.agentEvent.aggregate({ where: { runId: run.id }, _max: { sequence: true } });
     await tx.agentEvent.create({ data: { runId: run.id, sequence: (lastEvent._max.sequence ?? 0) + 1, type: 'run.cancelled', summary: 'Run cancelled by the user.' } });
     return tx.agentRun.findUnique({ where: { id: run.id } });
   });
+  if (!updated) return NextResponse.json({ error: 'Run is already finished.' }, { status: 409 });
   return NextResponse.json({ run: updated });
 }

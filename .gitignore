@@ -9,3 +9,7 @@ out/
 *.tsbuildinfo
 DEVPOST.md
 .cad-artifacts/
+
+# Local browser/test debug output
+output/
+.playwright-cli/

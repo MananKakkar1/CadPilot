@@ -3,11 +3,7 @@ import { Button } from '@/components/magicui/button';
 import Link from 'next/link';
 import { SiteShell } from '@/components/app-shell/site-shell';
 
-export default async function ChiliEditorPage({ searchParams }: { searchParams: Promise<{ project?: string; revision?: string }> }) {
-  const params = await searchParams;
-  const projectSlug = params.project ?? null;
-  const backHref = projectSlug ? `/projects/${projectSlug}` : '/projects';
-
+export default function ChiliEditorPage() {
   return (
     <SiteShell footer={false}><main className="cad-workbench-page">
       <header className="cad-workbench-header">

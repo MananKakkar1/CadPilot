@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "start:prod": "npm run build && next start",
-    "cad:worker": "node scripts/cad-agent-worker.mjs",
+    "cad:worker": "node --env-file=.env.local scripts/cad-agent-worker.mjs",
     "lint": "next lint",
     "test:responsive": "node scripts/verify-responsive-contract.mjs",
     "test:audit": "node --test scripts/test-*.mjs",

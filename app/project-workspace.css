@@ -1,0 +1,15 @@
+/* Keep long design conversations inside the workspace instead of pushing the viewport below the fold. */
+.agent-workspace{height:100svh;overflow:hidden}
+.agent-topbar{position:relative;z-index:5;flex:none}
+.agent-grid{min-height:0;overflow:hidden}
+.agent-chat,.agent-preview,.agent-rail{min-height:0;overflow:hidden}
+.agent-chat{min-height:0}
+.agent-chat .agent-scroll{min-height:0;overflow:hidden}
+.agent-chat .agent-scroll [data-slot="scroll-area-viewport"]{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.agent-chat-inner{padding:4px 14px 28px 0}
+.agent-message{overflow-wrap:anywhere}
+.agent-message pre,.agent-message table{max-width:100%;overflow-x:auto}
+.agent-composer{flex:none;background:#fff;padding-bottom:2px}
+.agent-rail .agent-scroll [data-slot="scroll-area-viewport"]{height:100%;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:980px){.agent-workspace{height:auto;min-height:100svh;overflow:visible}.agent-grid{overflow:visible}.agent-chat{min-height:calc(100svh - 64px)}.agent-preview{overflow:visible}}
+@media(max-width:680px){.agent-chat .agent-scroll{min-height:55svh}.agent-chat .agent-scroll [data-slot="scroll-area-viewport"]{max-height:calc(100svh - 220px)}.agent-composer{position:sticky;bottom:0;padding-top:12px;padding-bottom:12px;z-index:3}}
